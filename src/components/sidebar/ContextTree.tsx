@@ -1,12 +1,13 @@
-import type { Context } from '../../types'
+import type { ContextWithThreads } from '../../types'
 import { ContextItem } from './ContextItem'
 
 interface ContextTreeProps {
-  contexts: Context[]
+  contexts: ContextWithThreads[]
   expandedContextIds: Set<string>
   activeThreadId: string | null
   onToggleContextExpanded: (contextId: string) => void
   onSelectThread: (threadId: string) => void
+  onCreateThread: (contextId: string, name: string) => Promise<string>
 }
 
 export function ContextTree({
@@ -15,6 +16,7 @@ export function ContextTree({
   activeThreadId,
   onToggleContextExpanded,
   onSelectThread,
+  onCreateThread,
 }: ContextTreeProps) {
   if (contexts.length === 0) {
     return (
@@ -34,6 +36,7 @@ export function ContextTree({
           activeThreadId={activeThreadId}
           onToggleExpand={() => onToggleContextExpanded(context.id)}
           onSelectThread={onSelectThread}
+          onCreateThread={onCreateThread}
         />
       ))}
     </div>

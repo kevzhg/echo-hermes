@@ -7,9 +7,10 @@ interface ChatStageProps {
   activeContext: Context | null
   activeThread: Thread | null
   messages: Message[]
+  onSend: (content: string) => void
 }
 
-export function ChatStage({ activeContext, activeThread, messages }: ChatStageProps) {
+export function ChatStage({ activeContext, activeThread, messages, onSend }: ChatStageProps) {
   const [isTyping, setIsTyping] = useState(false)
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -19,10 +20,11 @@ export function ChatStage({ activeContext, activeThread, messages }: ChatStagePr
     }
   }, [])
 
-  const handleSend = useCallback((_message: string) => {
+  const handleSend = useCallback((content: string) => {
+    onSend(content)
     setIsTyping(true)
     typingTimerRef.current = setTimeout(() => setIsTyping(false), 1500)
-  }, [])
+  }, [onSend])
 
   return (
     <div className="h-full bg-[#0a0a0b] rounded-lg border border-zinc-800 flex flex-col">

@@ -1,13 +1,16 @@
-import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
-import type { Context } from '../../types'
+import { useState } from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
+import type { ContextWithThreads } from '../../types'
 import { ThreadItem } from './ThreadItem'
+import { InlineInput } from './InlineInput'
 
 interface ContextItemProps {
-  context: Context
+  context: ContextWithThreads
   isExpanded: boolean
   activeThreadId: string | null
   onToggleExpand: () => void
   onSelectThread: (threadId: string) => void
+  onCreateThread: (contextId: string, name: string) => Promise<string>
 }
 
 export function ContextItem({
@@ -16,7 +19,10 @@ export function ContextItem({
   activeThreadId,
   onToggleExpand,
   onSelectThread,
+  onCreateThread,
 }: ContextItemProps) {
+  const [isCreatingThread, setIsCreatingThread] = useState(false)
+
   return (
     <div className="mb-0.5">
       <button
@@ -47,10 +53,27 @@ export function ContextItem({
               onClick={() => onSelectThread(thread.id)}
             />
           ))}
-          <button className="w-full text-left rounded px-2.5 py-1.5 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors">
-            <Plus className="h-2.5 w-2.5 inline mr-1" />
-            New Thread
-          </button>
+          {isCreatingThread ? (
+            <div className="px-1">
+              <InlineInput
+                placeholder="Thread name..."
+                onConfirm={(name) => {
+                  onCreateThread(context.id, name).then(threadId => {
+                    onSelectThread(threadId)
+                    setIsCreatingThread(false)
+                  })
+                }}
+                onCancel={() => setIsCreatingThread(false)}
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsCreatingThread(true)}
+              className="w-full text-left rounded px-2.5 py-1.5 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors"
+            >
+              + New Thread
+            </button>
+          )}
         </div>
       )}
     </div>

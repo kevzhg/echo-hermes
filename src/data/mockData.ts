@@ -1,41 +1,20 @@
-import type { Context, Message, Skill } from '../types'
+import type { Context, Thread, Message, Skill } from '../types'
 
 export const mockContexts: Context[] = [
-  {
-    id: 'ctx-workplace',
-    name: 'Workplace',
-    emoji: '💼',
-    threads: [
-      { id: 'thr-okr', name: 'Q2 OKR Planning', contextId: 'ctx-workplace', lastMessageAt: '2026-04-08T14:42:00Z' },
-      { id: 'thr-onboard', name: 'Client Onboarding', contextId: 'ctx-workplace', lastMessageAt: '2026-04-08T13:15:00Z' },
-      { id: 'thr-standup', name: 'Team Standup Notes', contextId: 'ctx-workplace', lastMessageAt: '2026-04-08T11:00:00Z' },
-    ],
-  },
-  {
-    id: 'ctx-tech',
-    name: 'Tech',
-    emoji: '💻',
-    threads: [
-      { id: 'thr-rust', name: 'Rust Learning Path', contextId: 'ctx-tech', lastMessageAt: '2026-04-07T20:00:00Z' },
-      { id: 'thr-infra', name: 'Infra Migration', contextId: 'ctx-tech', lastMessageAt: '2026-04-07T16:30:00Z' },
-    ],
-  },
-  {
-    id: 'ctx-philosophy',
-    name: 'Philosophy',
-    emoji: '🌊',
-    threads: [
-      { id: 'thr-freewill', name: 'Free Will Debate', contextId: 'ctx-philosophy', lastMessageAt: '2026-04-06T22:00:00Z' },
-    ],
-  },
-  {
-    id: 'ctx-project',
-    name: 'Project Alpha',
-    emoji: '📂',
-    threads: [
-      { id: 'thr-alpha-main', name: 'Main Thread', contextId: 'ctx-project', lastMessageAt: '2026-04-08T09:00:00Z' },
-    ],
-  },
+  { id: 'ctx-workplace', name: 'Workplace', emoji: '💼', order: 0 },
+  { id: 'ctx-tech', name: 'Tech', emoji: '💻', order: 1 },
+  { id: 'ctx-philosophy', name: 'Philosophy', emoji: '🌊', order: 2 },
+  { id: 'ctx-project', name: 'Project Alpha', emoji: '📂', order: 3 },
+]
+
+export const mockThreads: Thread[] = [
+  { id: 'thr-okr', name: 'Q2 OKR Planning', contextId: 'ctx-workplace', lastMessageAt: '2026-04-08T14:42:00Z' },
+  { id: 'thr-onboard', name: 'Client Onboarding', contextId: 'ctx-workplace', lastMessageAt: '2026-04-08T13:15:00Z' },
+  { id: 'thr-standup', name: 'Team Standup Notes', contextId: 'ctx-workplace', lastMessageAt: '2026-04-08T11:00:00Z' },
+  { id: 'thr-rust', name: 'Rust Learning Path', contextId: 'ctx-tech', lastMessageAt: '2026-04-07T20:00:00Z' },
+  { id: 'thr-infra', name: 'Infra Migration', contextId: 'ctx-tech', lastMessageAt: '2026-04-07T16:30:00Z' },
+  { id: 'thr-freewill', name: 'Free Will Debate', contextId: 'ctx-philosophy', lastMessageAt: '2026-04-06T22:00:00Z' },
+  { id: 'thr-alpha-main', name: 'Main Thread', contextId: 'ctx-project', lastMessageAt: '2026-04-08T09:00:00Z' },
 ]
 
 export const mockMessages: Message[] = [

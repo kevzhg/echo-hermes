@@ -9,8 +9,10 @@ export interface Context {
   id: string
   name: string
   emoji: string
-  threads: Thread[]
+  order: number
 }
+
+export type ContextWithThreads = Context & { threads: Thread[] }
 
 export interface Message {
   id: string

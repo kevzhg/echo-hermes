@@ -7,6 +7,7 @@ import { Inspector } from './components/inspector/Inspector'
 import { usePanelCollapse } from './hooks/usePanelCollapse'
 import { useWorkspace } from './hooks/useWorkspace'
 import { db, initDb } from './db/index'
+import type { Message } from './types'
 import { toggleSkill, sendMessage } from './db/operations'
 
 export default function App() {
@@ -33,7 +34,7 @@ export default function App() {
   const activeMessages = useLiveQuery(
     () => activeThreadId
       ? db.messages.where('threadId').equals(activeThreadId).sortBy('timestamp')
-      : Promise.resolve([]),
+      : Promise.resolve([] as Message[]),
     [activeThreadId]
   ) ?? []
 

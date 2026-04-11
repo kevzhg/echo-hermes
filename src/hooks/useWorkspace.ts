@@ -1,9 +1,10 @@
 import { useState, useCallback, useMemo } from 'react'
-import type { Context, Thread } from '../types'
-import { mockContexts } from '../data/mockData'
+import { useLiveQuery } from 'dexie-react-hooks'
+import type { Context, Thread, ContextWithThreads } from '../types'
+import { db } from '../db/index'
+import { createContext, createThread, deleteContext, deleteThread } from '../db/operations'
 
 interface WorkspaceState {
-  contexts: Context[]
   expandedContextIds: Set<string>
   activeThreadId: string | null
   activeThread: Thread | null
@@ -12,11 +13,17 @@ interface WorkspaceState {
   setActiveThread: (threadId: string) => void
   filterQuery: string
   setFilterQuery: (query: string) => void
-  filteredContexts: Context[]
+  filteredContexts: ContextWithThreads[]
+  createContext: (name: string, emoji: string) => Promise<string>
+  createThread: (contextId: string, name: string) => Promise<string>
+  deleteContext: (contextId: string) => Promise<void>
+  deleteThread: (threadId: string) => Promise<void>
 }
 
 export function useWorkspace(): WorkspaceState {
-  const [contexts] = useState<Context[]>(mockContexts)
+  const rawContexts = useLiveQuery(() => db.contexts.orderBy('order').toArray()) ?? []
+  const allThreads = useLiveQuery(() => db.threads.toArray()) ?? []
+
   const [expandedContextIds, setExpandedContextIds] = useState<Set<string>>(
     new Set(['ctx-workplace'])
   )
@@ -37,35 +44,36 @@ export function useWorkspace(): WorkspaceState {
 
   const setActiveThread = useCallback((threadId: string) => {
     setActiveThreadId(threadId)
-    const parentContext = mockContexts.find(ctx =>
-      ctx.threads.some(t => t.id === threadId)
-    )
-    if (parentContext) {
+    const parentThread = allThreads.find(t => t.id === threadId)
+    if (parentThread) {
       setExpandedContextIds(prev => {
         const next = new Set(prev)
-        next.add(parentContext.id)
+        next.add(parentThread.contextId)
         return next
       })
     }
-  }, [])
+  }, [allThreads])
 
   const activeThread = useMemo(() => {
-    for (const ctx of contexts) {
-      const thread = ctx.threads.find(t => t.id === activeThreadId)
-      if (thread) return thread
-    }
-    return null
-  }, [contexts, activeThreadId])
+    return allThreads.find(t => t.id === activeThreadId) ?? null
+  }, [allThreads, activeThreadId])
 
   const activeContext = useMemo(() => {
     if (!activeThread) return null
-    return contexts.find(ctx => ctx.id === activeThread.contextId) ?? null
-  }, [contexts, activeThread])
+    return rawContexts.find(ctx => ctx.id === activeThread.contextId) ?? null
+  }, [rawContexts, activeThread])
 
-  const filteredContexts = useMemo(() => {
-    if (!filterQuery.trim()) return contexts
+  // Join contexts + threads, then filter
+  const filteredContexts = useMemo((): ContextWithThreads[] => {
+    const joined: ContextWithThreads[] = rawContexts.map(ctx => ({
+      ...ctx,
+      threads: allThreads.filter(t => t.contextId === ctx.id),
+    }))
+
+    if (!filterQuery.trim()) return joined
+
     const q = filterQuery.toLowerCase()
-    return contexts
+    return joined
       .map(ctx => {
         const nameMatch = ctx.name.toLowerCase().includes(q)
         const matchingThreads = ctx.threads.filter(t =>
@@ -75,11 +83,10 @@ export function useWorkspace(): WorkspaceState {
         if (matchingThreads.length > 0) return { ...ctx, threads: matchingThreads }
         return null
       })
-      .filter((ctx): ctx is Context => ctx !== null)
-  }, [contexts, filterQuery])
+      .filter((ctx): ctx is ContextWithThreads => ctx !== null)
+  }, [rawContexts, allThreads, filterQuery])
 
   return {
-    contexts,
     expandedContextIds,
     activeThreadId,
     activeThread,
@@ -89,5 +96,9 @@ export function useWorkspace(): WorkspaceState {
     filterQuery,
     setFilterQuery,
     filteredContexts,
+    createContext,
+    createThread,
+    deleteContext,
+    deleteThread,
   }
 }

@@ -48,29 +48,25 @@ class SubprocessManager:
 
         async with session.lock:
             session.last_used = time.time()
-            cmd = self._build_command(session, content)
 
-            logger.info("EXECUTING COMMAND: %s", cmd)
-
-            proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+            stdout_text, stderr_text, returncode = await self._exec(
+                self._build_command(session, content)
             )
-            stdout_bytes, stderr_bytes = await proc.communicate()
 
-            if stderr_bytes:
-                logger.debug("Hermes stderr: %s", stderr_bytes.decode(errors="replace")[:500])
+            # Retry without --resume if session not found
+            if returncode != 0 and "session not found" in (stdout_text + stderr_text).lower():
+                logger.info(
+                    "Session %s not found for thread %s, starting fresh",
+                    session.session_id, thread_id,
+                )
+                session.session_id = None
+                stdout_text, stderr_text, returncode = await self._exec(
+                    self._build_command(session, content)
+                )
 
-            stdout_text = stdout_bytes.decode(errors="replace").strip()
-            stderr_text = stderr_bytes.decode(errors="replace").strip()
-
-            if stderr_text:
-                logger.warning("Hermes stderr:\n%s", stderr_text)
-
-            if proc.returncode != 0:
+            if returncode != 0:
                 raise RuntimeError(
-                    f"Hermes exited with code {proc.returncode}. "
+                    f"Hermes exited with code {returncode}. "
                     f"stderr: {stderr_text[:500]}. "
                     f"stdout: {stdout_text[:500]}"
                 )
@@ -88,6 +84,24 @@ class SubprocessManager:
                 )
 
             return response
+
+    async def _exec(self, cmd: list[str]) -> tuple[str, str, int]:
+        logger.info("EXECUTING COMMAND: %s", cmd)
+
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout_bytes, stderr_bytes = await proc.communicate()
+
+        stdout_text = stdout_bytes.decode(errors="replace").strip()
+        stderr_text = stderr_bytes.decode(errors="replace").strip()
+
+        if stderr_text:
+            logger.warning("Hermes stderr:\n%s", stderr_text[:500])
+
+        return stdout_text, stderr_text, proc.returncode or 0
 
     def _build_command(self, session: HermesSession, content: str) -> list[str]:
         cmd = [HERMES_COMMAND, "chat", "-Q", "-q", content]

@@ -50,7 +50,7 @@ class SubprocessManager:
             session.last_used = time.time()
             cmd = self._build_command(session, content)
 
-            logger.info("Running: %s", " ".join(cmd[:4]) + " ...")
+            logger.info("EXECUTING COMMAND: %s", cmd)
 
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -62,14 +62,20 @@ class SubprocessManager:
             if stderr_bytes:
                 logger.debug("Hermes stderr: %s", stderr_bytes.decode(errors="replace")[:500])
 
+            stdout_text = stdout_bytes.decode(errors="replace").strip()
+            stderr_text = stderr_bytes.decode(errors="replace").strip()
+
+            if stderr_text:
+                logger.warning("Hermes stderr:\n%s", stderr_text)
+
             if proc.returncode != 0:
-                stderr_text = stderr_bytes.decode(errors="replace").strip()
                 raise RuntimeError(
-                    f"Hermes exited with code {proc.returncode}: {stderr_text[:200]}"
+                    f"Hermes exited with code {proc.returncode}. "
+                    f"stderr: {stderr_text[:500]}. "
+                    f"stdout: {stdout_text[:500]}"
                 )
 
-            raw_output = stdout_bytes.decode(errors="replace")
-            clean_output = strip_ansi(raw_output).strip()
+            clean_output = strip_ansi(stdout_text).strip()
 
             response, new_session_id = self._parse_output(clean_output)
 

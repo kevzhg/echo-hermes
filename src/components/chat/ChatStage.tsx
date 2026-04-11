@@ -1,13 +1,32 @@
-import type { Context, Thread } from '../../types'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import type { Context, Thread, Message } from '../../types'
+import { MessageList } from './MessageList'
+import { ChatInput } from './ChatInput'
 
 interface ChatStageProps {
   activeContext: Context | null
   activeThread: Thread | null
+  messages: Message[]
 }
 
-export function ChatStage({ activeContext, activeThread }: ChatStageProps) {
+export function ChatStage({ activeContext, activeThread, messages }: ChatStageProps) {
+  const [isTyping, setIsTyping] = useState(false)
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
+    }
+  }, [])
+
+  const handleSend = useCallback((_message: string) => {
+    setIsTyping(true)
+    typingTimerRef.current = setTimeout(() => setIsTyping(false), 1500)
+  }, [])
+
   return (
     <div className="h-full bg-[#0a0a0b] rounded-lg border border-zinc-800 flex flex-col">
+      {/* Top bar */}
       <div className="px-4 py-3 border-b border-zinc-800">
         {activeContext && activeThread ? (
           <div className="flex items-center gap-2 text-sm">
@@ -21,17 +40,19 @@ export function ChatStage({ activeContext, activeThread }: ChatStageProps) {
         )}
       </div>
 
-      <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm">
-        {activeThread
-          ? 'Chat messages will appear here (Phase 2)'
-          : 'Select a context and thread to begin'}
+      {/* Message area — min-h-0 is CRITICAL for flex scroll */}
+      <div className="flex-1 min-h-0">
+        {activeThread ? (
+          <MessageList messages={messages} isTyping={isTyping} />
+        ) : (
+          <div className="h-full flex items-center justify-center text-zinc-600 text-sm">
+            Select a context and thread to begin
+          </div>
+        )}
       </div>
 
-      <div className="px-4 pb-4">
-        <div className="bg-[#18181b] border border-zinc-800 rounded-md px-3 py-2.5 text-xs text-zinc-600">
-          Type a message... (Phase 2)
-        </div>
-      </div>
+      {/* Input */}
+      <ChatInput onSend={handleSend} />
     </div>
   )
 }

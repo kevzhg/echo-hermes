@@ -5,8 +5,8 @@ import { ChatStage } from './components/chat/ChatStage'
 import { Inspector } from './components/inspector/Inspector'
 import { usePanelCollapse } from './hooks/usePanelCollapse'
 import { useWorkspace } from './hooks/useWorkspace'
-import { mockSkills } from './data/mockData'
-import type { Skill } from './types'
+import { mockSkills, mockMessages } from './data/mockData'
+import type { Skill, Message } from './types'
 
 export default function App() {
   const { sidebarCollapsed, inspectorCollapsed, toggleSidebar, toggleInspector } =
@@ -24,6 +24,10 @@ export default function App() {
   } = useWorkspace()
 
   const [skills, setSkills] = useState<Skill[]>(mockSkills)
+
+  const activeMessages = activeThreadId
+    ? mockMessages.filter((m: Message) => m.threadId === activeThreadId)
+    : []
 
   const handleToggleSkill = useCallback((skillId: string) => {
     setSkills(prev =>
@@ -53,6 +57,7 @@ export default function App() {
         <ChatStage
           activeContext={activeContext}
           activeThread={activeThread}
+          messages={activeMessages}
         />
       }
       inspector={

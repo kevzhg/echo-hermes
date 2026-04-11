@@ -54,6 +54,7 @@ export const mockMessages: Message[] = [
     content: 'You can use the `cron_scheduler` skill. Define a schedule with a standard cron expression.\n\n**Steps:**\n1. Enable the `cron` skill in your tools config\n2. Use the `/cron` command with an expression\n3. Attach a callback function\n\nThe scheduler supports standard 5-field cron syntax.',
     timestamp: '2026-04-08T14:41:15Z',
     status: 'sent',
+    kairos: { context: 'Workplace', emoji: '💼', selfInitiated: false },
   },
   {
     id: 'msg-3',
@@ -70,6 +71,25 @@ export const mockMessages: Message[] = [
     content: 'Here\'s an example:\n\n```python\nfrom hermes import cron\n\n@cron.schedule("*/5 * * * *")\ndef check_updates():\n    results = search_web("latest news")\n    return summarize(results)\n```\n\nThis runs `check_updates` every 5 minutes. The decorator registers it with the cron scheduler automatically.',
     timestamp: '2026-04-08T14:42:10Z',
     status: 'sent',
+    kairos: { context: 'Workplace', emoji: '💼', selfInitiated: false },
+  },
+  {
+    id: 'msg-5',
+    threadId: 'thr-okr',
+    role: 'assistant',
+    content: 'I noticed your cron job from earlier might conflict with the existing `daily_report` schedule. Want me to check for overlaps?',
+    timestamp: '2026-04-08T15:15:00Z',
+    status: 'sent',
+    kairos: { context: 'Workplace', emoji: '💼', selfInitiated: true },
+  },
+  {
+    id: 'msg-6',
+    threadId: 'thr-okr',
+    role: 'assistant',
+    content: 'Rust build for `infra-core` finished. 3 warnings, 0 errors. Full log in Files tab.',
+    timestamp: '2026-04-08T15:22:00Z',
+    status: 'sent',
+    kairos: { context: 'Tech', emoji: '💻', selfInitiated: true },
   },
 ]
 

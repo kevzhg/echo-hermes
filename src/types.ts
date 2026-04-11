@@ -19,6 +19,11 @@ export interface Message {
   content: string
   timestamp: string
   status: 'sent' | 'streaming' | 'error'
+  kairos?: {
+    context: string
+    emoji: string
+    selfInitiated: boolean
+  }
 }
 
 export interface Skill {

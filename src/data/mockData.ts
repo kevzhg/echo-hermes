@@ -73,9 +73,9 @@ export const mockMessages: Message[] = [
 ]
 
 export const mockSkills: Skill[] = [
-  { id: 'skill-web', name: 'web_search', description: 'Search the web for information', enabled: true },
-  { id: 'skill-code', name: 'code_exec', description: 'Execute code in sandbox', enabled: true },
-  { id: 'skill-memory', name: 'memory', description: 'Persistent memory access', enabled: true },
-  { id: 'skill-file', name: 'file_ops', description: 'File system operations', enabled: false },
-  { id: 'skill-cron', name: 'cron', description: 'Scheduled task runner', enabled: true },
+  { id: 'skill-web', name: 'web_search', category: 'research', source: 'builtin', enabled: true },
+  { id: 'skill-code', name: 'code_exec', category: 'productivity', source: 'builtin', enabled: true },
+  { id: 'skill-memory', name: 'memory', category: 'productivity', source: 'builtin', enabled: true },
+  { id: 'skill-file', name: 'file_ops', category: 'productivity', source: 'builtin', enabled: false },
+  { id: 'skill-cron', name: 'cron', category: 'devops', source: 'builtin', enabled: true },
 ]

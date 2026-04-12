@@ -9,10 +9,10 @@ import { useWorkspace } from './hooks/useWorkspace'
 import { useHermesConnection } from './hooks/useHermesConnection'
 import { db, initDb } from './db/index'
 import type { Message } from './types'
-import { toggleSkill } from './db/operations'
+import { toggleSkill, syncSkillsFromBridge } from './db/operations'
 
 export default function App() {
-  useEffect(() => { initDb() }, [])
+  useEffect(() => { initDb().then(() => syncSkillsFromBridge()) }, [])
 
   const { sidebarCollapsed, inspectorCollapsed, toggleSidebar, toggleInspector } =
     usePanelCollapse()

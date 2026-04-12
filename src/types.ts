@@ -31,8 +31,14 @@ export interface Message {
 export interface Skill {
   id: string
   name: string
-  description: string
+  category: string
+  source: string
   enabled: boolean
+}
+
+export interface SkillCategory {
+  category: string
+  skills: { name: string; source: string }[]
 }
 
 export type AgentStatus = 'online' | 'thinking' | 'offline'

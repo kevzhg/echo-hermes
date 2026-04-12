@@ -125,8 +125,12 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     const msgId = await createStreamingMessage(tid)
     currentMsgIdRef.current = msgId
 
+    // Collect enabled skills
+    const skills = await db.skills.filter(s => s.enabled).toArray()
+    const skillNames = skills.map(s => s.name)
+
     // Send to bridge
-    ws.send(JSON.stringify({ type: 'message', content }))
+    ws.send(JSON.stringify({ type: 'message', content, skills: skillNames }))
   }, [])
 
   return { sendMessage: send, isConnected }

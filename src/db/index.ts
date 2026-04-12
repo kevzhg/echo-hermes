@@ -15,6 +15,13 @@ db.version(1).stores({
   skills: 'id',
 })
 
+db.version(2).stores({
+  contexts: 'id, order',
+  threads: 'id, contextId, lastMessageAt',
+  messages: 'id, threadId, timestamp',
+  skills: 'id, category',
+})
+
 async function initDb(): Promise<void> {
   const count = await db.contexts.count()
   if (count > 0) return

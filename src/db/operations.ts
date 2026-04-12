@@ -76,6 +76,53 @@ export async function failStreamingMessage(messageId: string, error: string): Pr
   await db.messages.update(messageId, { content: error, status: 'error' })
 }
 
+export async function syncSkillsFromBridge(): Promise<void> {
+  try {
+    const res = await fetch('http://localhost:8000/api/skills')
+    if (!res.ok) return
+
+    const categories: { category: string; skills: { name: string; source: string }[] }[] = await res.json()
+
+    const existingSkills = await db.skills.toArray()
+    const existingByName = new Map(existingSkills.map(s => [s.name, s]))
+    const incomingNames = new Set<string>()
+
+    await db.transaction('rw', db.skills, async () => {
+      for (const cat of categories) {
+        for (const s of cat.skills) {
+          incomingNames.add(s.name)
+          const existing = existingByName.get(s.name)
+          if (existing) {
+            // Update category/source, keep enabled state
+            await db.skills.update(existing.id, {
+              category: cat.category,
+              source: s.source,
+            })
+          } else {
+            // New skill — default enabled
+            await db.skills.add({
+              id: crypto.randomUUID(),
+              name: s.name,
+              category: cat.category,
+              source: s.source,
+              enabled: true,
+            })
+          }
+        }
+      }
+
+      // Remove stale skills not in Hermes anymore
+      for (const existing of existingSkills) {
+        if (!incomingNames.has(existing.name)) {
+          await db.skills.delete(existing.id)
+        }
+      }
+    })
+  } catch {
+    // Bridge not running — keep existing skills
+  }
+}
+
 export async function toggleSkill(skillId: string): Promise<void> {
   const skill = await db.skills.get(skillId)
   if (skill) {

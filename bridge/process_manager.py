@@ -10,8 +10,9 @@ from ansi import strip_ansi
 
 logger = logging.getLogger(__name__)
 
-HERMES_COMMAND = os.getenv("HERMES_COMMAND", "hermes")
+HERMES_COMMAND = os.getenv("HERMES_COMMAND", "/Users/kz/.local/bin/hermes")
 PROCESS_TIMEOUT = int(os.getenv("PROCESS_TIMEOUT", "3600"))
+HERMES_HOME = os.path.expanduser("~/.hermes")
 
 
 @dataclass
@@ -88,10 +89,15 @@ class SubprocessManager:
     async def _exec(self, cmd: list[str]) -> tuple[str, str, int]:
         logger.info("EXECUTING COMMAND: %s", cmd)
 
+        # Inherit user's full env so Hermes finds config, API keys, PATH
+        env = os.environ.copy()
+        env["HOME"] = os.path.expanduser("~")
+
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            env=env,
         )
         stdout_bytes, stderr_bytes = await proc.communicate()
 

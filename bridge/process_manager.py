@@ -110,7 +110,7 @@ class SubprocessManager:
         return stdout_text, stderr_text, proc.returncode or 0
 
     def _build_command(self, session: HermesSession, content: str) -> list[str]:
-        cmd = [HERMES_COMMAND, "chat", "-Q", "-q", content]
+        cmd = [HERMES_COMMAND, "chat", "-Q", "-q", content, "-m", "qwen/qwen3.6-plus"]
         if session.session_id:
             cmd.extend(["--resume", session.session_id])
         return cmd

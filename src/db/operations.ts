@@ -55,6 +55,27 @@ export async function deleteThread(threadId: string): Promise<void> {
   })
 }
 
+export async function createStreamingMessage(threadId: string): Promise<string> {
+  const id = crypto.randomUUID()
+  await db.messages.add({
+    id,
+    threadId,
+    role: 'assistant',
+    content: '',
+    timestamp: new Date().toISOString(),
+    status: 'streaming',
+  })
+  return id
+}
+
+export async function updateStreamingMessage(messageId: string, content: string): Promise<void> {
+  await db.messages.update(messageId, { content, status: 'sent' })
+}
+
+export async function failStreamingMessage(messageId: string, error: string): Promise<void> {
+  await db.messages.update(messageId, { content: error, status: 'error' })
+}
+
 export async function toggleSkill(skillId: string): Promise<void> {
   const skill = await db.skills.get(skillId)
   if (skill) {

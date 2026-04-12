@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
 import type { Context, Thread, Message } from '../../types'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
@@ -11,20 +10,7 @@ interface ChatStageProps {
 }
 
 export function ChatStage({ activeContext, activeThread, messages, onSend }: ChatStageProps) {
-  const [isTyping, setIsTyping] = useState(false)
-  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
-    }
-  }, [])
-
-  const handleSend = useCallback((content: string) => {
-    onSend(content)
-    setIsTyping(true)
-    typingTimerRef.current = setTimeout(() => setIsTyping(false), 1500)
-  }, [onSend])
+  const isTyping = messages.some(m => m.status === 'streaming')
 
   return (
     <div className="h-full bg-[#0a0a0b] rounded-lg border border-zinc-800 flex flex-col">
@@ -53,8 +39,8 @@ export function ChatStage({ activeContext, activeThread, messages, onSend }: Cha
         )}
       </div>
 
-      {/* Input */}
-      <ChatInput onSend={handleSend} />
+      {/* Input — disabled while streaming */}
+      <ChatInput onSend={onSend} disabled={isTyping} />
     </div>
   )
 }

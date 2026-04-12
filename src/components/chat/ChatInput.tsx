@@ -3,12 +3,14 @@ import { Paperclip, ArrowUp } from 'lucide-react'
 
 interface ChatInputProps {
   onSend: (message: string) => void
+  disabled?: boolean
 }
 
-export function ChatInput({ onSend }: ChatInputProps) {
+export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const hasText = value.trim().length > 0
+  const canSend = hasText && !disabled
 
   useEffect(() => {
     const el = textareaRef.current
@@ -18,10 +20,10 @@ export function ChatInput({ onSend }: ChatInputProps) {
   }, [value])
 
   const handleSend = useCallback(() => {
-    if (!value.trim()) return
+    if (!canSend) return
     onSend(value.trim())
     setValue('')
-  }, [value, onSend])
+  }, [value, canSend, onSend])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -41,15 +43,16 @@ export function ChatInput({ onSend }: ChatInputProps) {
           value={value}
           onChange={e => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
+          placeholder={disabled ? 'Echo is thinking...' : 'Type a message...'}
+          disabled={disabled}
           rows={1}
-          className="flex-1 bg-transparent text-sm text-zinc-200 placeholder-zinc-600 outline-none resize-none leading-relaxed"
+          className="flex-1 bg-transparent text-sm text-zinc-200 placeholder-zinc-600 outline-none resize-none leading-relaxed disabled:opacity-50"
         />
         <button
           onClick={handleSend}
-          disabled={!hasText}
+          disabled={!canSend}
           className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors shrink-0 ${
-            hasText
+            canSend
               ? 'bg-[#3b82f6] text-white hover:bg-blue-600'
               : 'bg-[#3f3f46] text-[#71717a]'
           }`}

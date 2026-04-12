@@ -6,9 +6,10 @@ import { ChatStage } from './components/chat/ChatStage'
 import { Inspector } from './components/inspector/Inspector'
 import { usePanelCollapse } from './hooks/usePanelCollapse'
 import { useWorkspace } from './hooks/useWorkspace'
+import { useHermesConnection } from './hooks/useHermesConnection'
 import { db, initDb } from './db/index'
 import type { Message } from './types'
-import { toggleSkill, sendMessage } from './db/operations'
+import { toggleSkill } from './db/operations'
 
 export default function App() {
   useEffect(() => { initDb() }, [])
@@ -29,6 +30,8 @@ export default function App() {
     createThread,
   } = useWorkspace()
 
+  const { sendMessage: hermesSend } = useHermesConnection(activeThreadId)
+
   const skills = useLiveQuery(() => db.skills.toArray()) ?? []
 
   const activeMessages = useLiveQuery(
@@ -41,12 +44,6 @@ export default function App() {
   const handleToggleSkill = useCallback((skillId: string) => {
     toggleSkill(skillId)
   }, [])
-
-  const handleSend = useCallback((content: string) => {
-    if (activeThreadId) {
-      sendMessage(activeThreadId, content)
-    }
-  }, [activeThreadId])
 
   return (
     <AppShell
@@ -73,7 +70,7 @@ export default function App() {
           activeContext={activeContext}
           activeThread={activeThread}
           messages={activeMessages}
-          onSend={handleSend}
+          onSend={hermesSend}
         />
       }
       inspector={

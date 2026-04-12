@@ -30,13 +30,33 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     ? '1px solid rgba(245, 158, 11, 0.2)'
     : '1px solid #27272a'
 
+  const isStreaming = message.status === 'streaming'
+  const isEmpty = message.content.trim() === ''
+
   return (
     <div className="flex flex-col items-start px-4 py-1">
       <div
         className="bg-[#18181b] text-zinc-300 text-sm px-3.5 py-2.5 max-w-[78%]"
         style={{ borderRadius: '12px 12px 12px 4px', border: bubbleBorder }}
       >
-        <MarkdownRenderer content={message.content} />
+        {isStreaming && isEmpty ? (
+          <span className="inline-flex items-center gap-1.5">
+            {[0, 0.2, 0.4].map((delay, i) => (
+              <span
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] animate-pulse"
+                style={{ animationDelay: `${delay}s`, animationDuration: '1.4s' }}
+              />
+            ))}
+          </span>
+        ) : isStreaming ? (
+          <span className="whitespace-pre-wrap">
+            {message.content}
+            <span className="animate-pulse ml-0.5 text-zinc-400">&#9611;</span>
+          </span>
+        ) : (
+          <MarkdownRenderer content={message.content} />
+        )}
       </div>
       <div className="flex items-center gap-1.5 mt-1.5">
         <span className="text-[11px] text-[#52525b]">{time}</span>

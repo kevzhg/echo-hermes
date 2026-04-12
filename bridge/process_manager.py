@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+import shutil
 import time
 from dataclasses import dataclass, field
 
@@ -10,9 +11,13 @@ from ansi import strip_ansi
 
 logger = logging.getLogger(__name__)
 
-HERMES_COMMAND = os.getenv("HERMES_COMMAND", "/Users/kz/.local/bin/hermes")
+# Resolve hermes binary: env override > shutil.which > hardcoded fallback
+HERMES_COMMAND = (
+    os.getenv("HERMES_COMMAND")
+    or shutil.which("hermes")
+    or "/Users/kz/.local/bin/hermes"
+)
 PROCESS_TIMEOUT = int(os.getenv("PROCESS_TIMEOUT", "3600"))
-HERMES_HOME = os.path.expanduser("~/.hermes")
 
 
 @dataclass
@@ -29,6 +34,8 @@ class SubprocessManager:
         self._cleanup_task: asyncio.Task | None = None
 
     async def start(self) -> None:
+        logger.info("Hermes binary: %s", HERMES_COMMAND)
+        logger.info("Binary exists: %s", os.path.exists(HERMES_COMMAND))
         self._cleanup_task = asyncio.create_task(self._cleanup_loop())
 
     async def stop(self) -> None:
@@ -50,15 +57,18 @@ class SubprocessManager:
         async with session.lock:
             session.last_used = time.time()
 
+            # First attempt (with --resume if session exists)
             stdout_text, stderr_text, returncode = await self._exec(
                 self._build_command(session, content)
             )
 
-            # Retry without --resume if session not found
-            if returncode != 0 and "session not found" in (stdout_text + stderr_text).lower():
+            # Retry without --resume on ANY failure when session_id was set
+            # Covers: session not found, session corruption, stale session
+            if returncode != 0 and session.session_id is not None:
                 logger.info(
-                    "Session %s not found for thread %s, starting fresh",
-                    session.session_id, thread_id,
+                    "First attempt failed for thread %s (session %s), retrying fresh. "
+                    "Exit code: %d, stdout: %.200s, stderr: %.200s",
+                    thread_id, session.session_id, returncode, stdout_text, stderr_text,
                 )
                 session.session_id = None
                 stdout_text, stderr_text, returncode = await self._exec(
@@ -66,6 +76,14 @@ class SubprocessManager:
                 )
 
             if returncode != 0:
+                # Log full raw output for debugging
+                logger.error(
+                    "Hermes failed for thread %s.\n"
+                    "  Exit code: %d\n"
+                    "  RAW STDOUT:\n%s\n"
+                    "  RAW STDERR:\n%s",
+                    thread_id, returncode, stdout_text, stderr_text,
+                )
                 raise RuntimeError(
                     f"Hermes exited with code {returncode}. "
                     f"stderr: {stderr_text[:500]}. "
@@ -89,9 +107,15 @@ class SubprocessManager:
     async def _exec(self, cmd: list[str]) -> tuple[str, str, int]:
         logger.info("EXECUTING COMMAND: %s", cmd)
 
-        # Inherit user's full env so Hermes finds config, API keys, PATH
+        # Pass user's full shell env so Hermes finds config, API keys, PATH
         env = os.environ.copy()
         env["HOME"] = os.path.expanduser("~")
+
+        # Log key env vars for debugging
+        logger.debug(
+            "ENV: HOME=%s, PATH=%.200s, HERMES_HOME=%s",
+            env.get("HOME"), env.get("PATH", ""), env.get("HERMES_HOME", "(unset)"),
+        )
 
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -105,7 +129,9 @@ class SubprocessManager:
         stderr_text = stderr_bytes.decode(errors="replace").strip()
 
         if stderr_text:
-            logger.warning("Hermes stderr:\n%s", stderr_text[:500])
+            logger.warning("Hermes stderr:\n%s", stderr_text)
+        if stdout_text:
+            logger.info("Hermes stdout:\n%s", stdout_text[:1000])
 
         return stdout_text, stderr_text, proc.returncode or 0
 

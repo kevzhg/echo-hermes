@@ -12,6 +12,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from process_manager import SubprocessManager
+from skills import discover_skills
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -44,6 +45,11 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/api/skills")
+async def get_skills():
+    return await discover_skills()
+
+
 @app.websocket("/ws/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, thread_id: str):
     await websocket.accept()
@@ -68,11 +74,13 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
                 await websocket.send_json({"type": "error", "message": "Empty message"})
                 continue
 
+            skills = data.get("skills", [])
+
             # Signal that agent is thinking
             await websocket.send_json({"type": "thinking"})
 
             try:
-                response = await manager.run_message(thread_id, content)
+                response = await manager.run_message(thread_id, content, skills=skills)
                 await websocket.send_json({"type": "done", "content": response})
             except Exception as e:
                 logger.exception("Error running Hermes for thread %s", thread_id)

@@ -51,7 +51,7 @@ class SubprocessManager:
             self.sessions[thread_id] = HermesSession(thread_id=thread_id)
         return self.sessions[thread_id]
 
-    async def run_message(self, thread_id: str, content: str) -> str:
+    async def run_message(self, thread_id: str, content: str, skills: list[str] | None = None) -> str:
         session = self.get_or_create(thread_id)
 
         async with session.lock:
@@ -59,7 +59,7 @@ class SubprocessManager:
 
             # First attempt (with --resume if session exists)
             stdout_text, stderr_text, returncode = await self._exec(
-                self._build_command(session, content)
+                self._build_command(session, content, skills=skills)
             )
 
             # Retry without --resume on ANY failure when session_id was set
@@ -72,7 +72,7 @@ class SubprocessManager:
                 )
                 session.session_id = None
                 stdout_text, stderr_text, returncode = await self._exec(
-                    self._build_command(session, content)
+                    self._build_command(session, content, skills=skills)
                 )
 
             if returncode != 0:
@@ -135,10 +135,12 @@ class SubprocessManager:
 
         return stdout_text, stderr_text, proc.returncode or 0
 
-    def _build_command(self, session: HermesSession, content: str) -> list[str]:
+    def _build_command(self, session: HermesSession, content: str, skills: list[str] | None = None) -> list[str]:
         cmd = [HERMES_COMMAND, "chat", "-Q", "-q", content, "-m", "qwen/qwen3.6-plus"]
         if session.session_id:
             cmd.extend(["--resume", session.session_id])
+        if skills:
+            cmd.extend(["--skills", ",".join(skills)])
         return cmd
 
     @staticmethod

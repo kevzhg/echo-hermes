@@ -20,6 +20,24 @@ HERMES_COMMAND = (
 PROCESS_TIMEOUT = int(os.getenv("PROCESS_TIMEOUT", "3600"))
 
 
+def _strip_banners(lines: list[str]) -> list[str]:
+    """Remove Hermes CLI banner/decorative lines from response output."""
+    result = []
+    for line in lines:
+        stripped = line.strip()
+        # Skip resumed session banner: "↺ Resumed session XXX ..."
+        if stripped.startswith("↺ Resumed session") or stripped.startswith("Resumed session"):
+            continue
+        # Skip Hermes decorative line with unicode box-drawing chars: "╭── ⚗ Hermes ───..."
+        if "Hermes" in stripped and any(c in stripped for c in ("╭", "╮", "╰", "╯", "─", "━")):
+            continue
+        # Skip pure horizontal rule lines
+        if stripped and all(c in "─━╌╍═-" for c in stripped):
+            continue
+        result.append(line)
+    return result
+
+
 @dataclass
 class HermesSession:
     thread_id: str
@@ -151,17 +169,24 @@ class SubprocessManager:
     def _parse_output(output: str) -> tuple[str, str | None]:
         # Search lines from bottom for session_id
         lines = output.strip().split("\n")
+        session_id = None
+        response_end = len(lines)
         for i in range(len(lines) - 1, -1, -1):
             line = lines[i].strip()
             if line.startswith("session_id:"):
                 session_id = line.replace("session_id:", "").strip()
-                response = "\n".join(lines[:i]).strip()
+                response_end = i
                 logger.info("Parsed session_id: %s", session_id)
-                return response, session_id
+                break
 
-        # No session_id found — return full output as response
-        logger.warning("No session_id found in Hermes output. Last 3 lines: %s", lines[-3:])
-        return output, None
+        response_lines = lines[:response_end]
+        cleaned = _strip_banners(response_lines)
+        response = "\n".join(cleaned).strip()
+
+        if session_id is None:
+            logger.warning("No session_id found in Hermes output. Last 3 lines: %s", lines[-3:])
+
+        return response, session_id
 
     async def _cleanup_loop(self) -> None:
         while True:

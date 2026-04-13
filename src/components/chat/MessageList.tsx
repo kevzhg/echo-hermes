@@ -34,10 +34,12 @@ export function MessageList({ messages, isTyping = false }: MessageListProps) {
     elements.push(<MessageBubble key={msg.id} message={msg} />)
   }
 
+  const hasStreamingMessage = messages.some(m => m.status === 'streaming')
+
   return (
     <div className="h-full overflow-y-auto py-3">
       {elements}
-      {isTyping && <TypingIndicator />}
+      {isTyping && !hasStreamingMessage && <TypingIndicator />}
       <div ref={bottomRef} />
     </div>
   )

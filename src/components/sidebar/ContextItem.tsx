@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import type { ContextWithThreads } from '../../types'
 import { ThreadItem } from './ThreadItem'
@@ -14,20 +14,37 @@ interface ContextItemProps {
   onRenameThread: (threadId: string, name: string) => void
   onSetThreadSessionId: (threadId: string, sessionId?: string) => void
   onDeleteThread: (threadId: string) => void
+  onToggleThreadFavorite: (threadId: string) => void
+  onReorderThreads: (contextId: string, orderedIds: string[]) => void
 }
 
 export function ContextItem({
-  context,
-  isExpanded,
-  activeThreadId,
-  onToggleExpand,
-  onSelectThread,
-  onCreateThread,
-  onRenameThread,
-  onSetThreadSessionId,
-  onDeleteThread,
+  context, isExpanded, activeThreadId, onToggleExpand, onSelectThread,
+  onCreateThread, onRenameThread, onSetThreadSessionId, onDeleteThread,
+  onToggleThreadFavorite, onReorderThreads,
 }: ContextItemProps) {
   const [isCreatingThread, setIsCreatingThread] = useState(false)
+  const [draggedId, setDraggedId] = useState<string | null>(null)
+
+  const handleDragStart = useCallback((threadId: string) => {
+    setDraggedId(threadId)
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent, _threadId: string) => {
+    e.preventDefault()
+  }, [])
+
+  const handleDrop = useCallback((targetId: string) => {
+    if (!draggedId || draggedId === targetId) return
+    const ids = context.threads.map(t => t.id)
+    const fromIndex = ids.indexOf(draggedId)
+    const toIndex = ids.indexOf(targetId)
+    if (fromIndex === -1 || toIndex === -1) return
+    ids.splice(fromIndex, 1)
+    ids.splice(toIndex, 0, draggedId)
+    onReorderThreads(context.id, ids)
+    setDraggedId(null)
+  }, [draggedId, context.threads, context.id, onReorderThreads])
 
   return (
     <div className="mb-0.5">
@@ -60,6 +77,10 @@ export function ContextItem({
               onRename={onRenameThread}
               onSetSessionId={onSetThreadSessionId}
               onDelete={onDeleteThread}
+              onToggleFavorite={onToggleThreadFavorite}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
             />
           ))}
           {isCreatingThread ? (

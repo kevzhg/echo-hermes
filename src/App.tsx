@@ -19,6 +19,8 @@ import {
   renameThread,
   setThreadSessionId,
   deleteThread,
+  toggleThreadFavorite,
+  reorderThreads,
 } from './db/operations'
 
 export default function App() {
@@ -80,6 +82,8 @@ export default function App() {
           onRenameThread={(id, name) => renameThread(id, name)}
           onSetThreadSessionId={(id, sid) => setThreadSessionId(id, sid)}
           onDeleteThread={(id) => deleteThread(id)}
+          onToggleThreadFavorite={(id) => toggleThreadFavorite(id)}
+          onReorderThreads={(ctxId, ids) => reorderThreads(ctxId, ids)}
         />
       }
       main={

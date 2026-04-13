@@ -1,16 +1,18 @@
 import { useEffect, useRef } from 'react'
-import { Link, Pencil, Settings } from 'lucide-react'
+import { Star, Link, Pencil, Settings } from 'lucide-react'
 
 interface ThreadContextMenuProps {
   x: number
   y: number
+  isFavorite: boolean
+  onFavorite: () => void
   onSessionId: () => void
   onRename: () => void
   onSettings: () => void
   onClose: () => void
 }
 
-export function ThreadContextMenu({ x, y, onSessionId, onRename, onSettings, onClose }: ThreadContextMenuProps) {
+export function ThreadContextMenu({ x, y, isFavorite, onFavorite, onSessionId, onRename, onSettings, onClose }: ThreadContextMenuProps) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -29,6 +31,7 @@ export function ThreadContextMenu({ x, y, onSessionId, onRename, onSettings, onC
   }, [onClose])
 
   const items = [
+    { icon: Star, label: isFavorite ? 'Unfavorite' : 'Favorite', action: onFavorite, color: isFavorite ? 'text-amber-400' : 'text-zinc-400' },
     { icon: Link, label: 'Session ID', action: onSessionId, color: 'text-zinc-400' },
     { icon: Pencil, label: 'Rename', action: onRename, color: 'text-zinc-400' },
     { icon: Settings, label: 'Settings', action: onSettings, color: 'text-zinc-400' },

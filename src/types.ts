@@ -4,6 +4,8 @@ export interface Thread {
   contextId: string
   lastMessageAt: string
   hermesSessionId?: string
+  order: number
+  favorite: boolean
 }
 
 export interface Context {

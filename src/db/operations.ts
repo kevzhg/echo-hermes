@@ -14,11 +14,15 @@ export async function createContext(name: string, emoji: string): Promise<string
 
 export async function createThread(contextId: string, name: string): Promise<string> {
   const id = crypto.randomUUID()
+  const siblings = await db.threads.where('contextId').equals(contextId).toArray()
+  const maxOrder = siblings.reduce((max, t) => Math.max(max, t.order ?? 0), -1)
   await db.threads.add({
     id,
     contextId,
     name,
     lastMessageAt: new Date().toISOString(),
+    order: maxOrder + 1,
+    favorite: false,
   })
   return id
 }
@@ -61,6 +65,21 @@ export async function renameThread(threadId: string, name: string): Promise<void
 
 export async function setThreadSessionId(threadId: string, hermesSessionId: string | undefined): Promise<void> {
   await db.threads.update(threadId, { hermesSessionId: hermesSessionId || undefined })
+}
+
+export async function reorderThreads(_contextId: string, orderedIds: string[]): Promise<void> {
+  await db.transaction('rw', db.threads, async () => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      await db.threads.update(orderedIds[i], { order: i })
+    }
+  })
+}
+
+export async function toggleThreadFavorite(threadId: string): Promise<void> {
+  const thread = await db.threads.get(threadId)
+  if (thread) {
+    await db.threads.update(threadId, { favorite: !thread.favorite })
+  }
 }
 
 export async function createStreamingMessage(threadId: string): Promise<string> {

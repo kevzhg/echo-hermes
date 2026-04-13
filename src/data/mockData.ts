@@ -8,13 +8,13 @@ export const mockContexts: Context[] = [
 ]
 
 export const mockThreads: Thread[] = [
-  { id: 'thr-okr', name: 'Q2 OKR Planning', contextId: 'ctx-workplace', lastMessageAt: '2026-04-08T14:42:00Z' },
-  { id: 'thr-onboard', name: 'Client Onboarding', contextId: 'ctx-workplace', lastMessageAt: '2026-04-08T13:15:00Z' },
-  { id: 'thr-standup', name: 'Team Standup Notes', contextId: 'ctx-workplace', lastMessageAt: '2026-04-08T11:00:00Z' },
-  { id: 'thr-rust', name: 'Rust Learning Path', contextId: 'ctx-tech', lastMessageAt: '2026-04-07T20:00:00Z' },
-  { id: 'thr-infra', name: 'Infra Migration', contextId: 'ctx-tech', lastMessageAt: '2026-04-07T16:30:00Z' },
-  { id: 'thr-freewill', name: 'Free Will Debate', contextId: 'ctx-philosophy', lastMessageAt: '2026-04-06T22:00:00Z' },
-  { id: 'thr-alpha-main', name: 'Main Thread', contextId: 'ctx-project', lastMessageAt: '2026-04-08T09:00:00Z' },
+  { id: 'thr-okr', name: 'Q2 OKR Planning', contextId: 'ctx-workplace', lastMessageAt: '2026-04-08T14:42:00Z', order: 0, favorite: true },
+  { id: 'thr-onboard', name: 'Client Onboarding', contextId: 'ctx-workplace', lastMessageAt: '2026-04-08T13:15:00Z', order: 1, favorite: false },
+  { id: 'thr-standup', name: 'Team Standup Notes', contextId: 'ctx-workplace', lastMessageAt: '2026-04-08T11:00:00Z', order: 2, favorite: false },
+  { id: 'thr-rust', name: 'Rust Learning Path', contextId: 'ctx-tech', lastMessageAt: '2026-04-07T20:00:00Z', order: 0, favorite: false },
+  { id: 'thr-infra', name: 'Infra Migration', contextId: 'ctx-tech', lastMessageAt: '2026-04-07T16:30:00Z', order: 1, favorite: false },
+  { id: 'thr-freewill', name: 'Free Will Debate', contextId: 'ctx-philosophy', lastMessageAt: '2026-04-06T22:00:00Z', order: 0, favorite: false },
+  { id: 'thr-alpha-main', name: 'Main Thread', contextId: 'ctx-project', lastMessageAt: '2026-04-08T09:00:00Z', order: 0, favorite: false },
 ]
 
 export const mockMessages: Message[] = [

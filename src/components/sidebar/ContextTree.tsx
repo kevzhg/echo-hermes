@@ -11,6 +11,8 @@ interface ContextTreeProps {
   onRenameThread: (threadId: string, name: string) => void
   onSetThreadSessionId: (threadId: string, sessionId?: string) => void
   onDeleteThread: (threadId: string) => void
+  onToggleThreadFavorite: (threadId: string) => void
+  onReorderThreads: (contextId: string, orderedIds: string[]) => void
 }
 
 export function ContextTree({
@@ -23,6 +25,8 @@ export function ContextTree({
   onRenameThread,
   onSetThreadSessionId,
   onDeleteThread,
+  onToggleThreadFavorite,
+  onReorderThreads,
 }: ContextTreeProps) {
   if (contexts.length === 0) {
     return (
@@ -46,6 +50,8 @@ export function ContextTree({
           onRenameThread={onRenameThread}
           onSetThreadSessionId={onSetThreadSessionId}
           onDeleteThread={onDeleteThread}
+          onToggleThreadFavorite={onToggleThreadFavorite}
+          onReorderThreads={onReorderThreads}
         />
       ))}
     </div>

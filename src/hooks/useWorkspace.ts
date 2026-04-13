@@ -67,7 +67,7 @@ export function useWorkspace(): WorkspaceState {
   const filteredContexts = useMemo((): ContextWithThreads[] => {
     const joined: ContextWithThreads[] = rawContexts.map(ctx => ({
       ...ctx,
-      threads: allThreads.filter(t => t.contextId === ctx.id),
+      threads: allThreads.filter(t => t.contextId === ctx.id).sort((a, b) => a.order - b.order),
     }))
 
     if (!filterQuery.trim()) return joined

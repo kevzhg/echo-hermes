@@ -11,6 +11,7 @@ export function EmojiPicker({ selected, onSelect }: EmojiPickerProps) {
       {presets.map(emoji => (
         <button
           key={emoji}
+          onMouseDown={e => e.preventDefault()}
           onClick={() => onSelect(emoji)}
           className={`w-7 h-7 flex items-center justify-center rounded text-sm transition-colors ${
             selected === emoji

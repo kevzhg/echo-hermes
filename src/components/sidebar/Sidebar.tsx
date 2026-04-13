@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Settings } from 'lucide-react'
 import type { AgentStatus as AgentStatusType, ContextWithThreads } from '../../types'
 import { AgentStatus } from './AgentStatus'
 import { SearchInput } from './SearchInput'
+import { FavoritesBar } from './FavoritesBar'
 import { ContextTree } from './ContextTree'
 import { InlineInput } from './InlineInput'
 import { EmojiPicker } from './EmojiPicker'
@@ -21,6 +22,8 @@ interface SidebarProps {
   onRenameThread: (threadId: string, name: string) => void
   onSetThreadSessionId: (threadId: string, sessionId?: string) => void
   onDeleteThread: (threadId: string) => void
+  onToggleThreadFavorite: (threadId: string) => void
+  onReorderThreads: (contextId: string, orderedIds: string[]) => void
 }
 
 export function Sidebar({
@@ -37,7 +40,14 @@ export function Sidebar({
   onRenameThread,
   onSetThreadSessionId,
   onDeleteThread,
+  onToggleThreadFavorite,
+  onReorderThreads,
 }: SidebarProps) {
+  const favoriteThreads = useMemo(
+    () => contexts.flatMap(c => c.threads).filter(t => t.favorite),
+    [contexts],
+  )
+
   const [isCreatingContext, setIsCreatingContext] = useState(false)
   const [pendingEmoji, setPendingEmoji] = useState('📁')
 
@@ -59,6 +69,12 @@ export function Sidebar({
         placeholder="Search contexts..."
       />
 
+      <FavoritesBar
+        threads={favoriteThreads}
+        activeThreadId={activeThreadId}
+        onSelectThread={onSelectThread}
+      />
+
       <ContextTree
         contexts={contexts}
         expandedContextIds={expandedContextIds}
@@ -69,6 +85,8 @@ export function Sidebar({
         onRenameThread={onRenameThread}
         onSetThreadSessionId={onSetThreadSessionId}
         onDeleteThread={onDeleteThread}
+        onToggleThreadFavorite={onToggleThreadFavorite}
+        onReorderThreads={onReorderThreads}
       />
 
       <div className="mt-2 pt-2 border-t border-zinc-800">

@@ -114,7 +114,7 @@ export function Inspector({
                     <ChevronRight className="h-2.5 w-2.5" />
                   )}
                   <Zap className="h-2.5 w-2.5 text-emerald-500" />
-                  <span>Active Skills ({pinnedSkills.length})</span>
+                  <span>Pinned Skills ({pinnedSkills.length})</span>
                 </button>
                 {pinnedOpen && (
                   <div className="flex flex-wrap gap-1.5 mt-1 px-1">

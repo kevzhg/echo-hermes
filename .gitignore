@@ -29,3 +29,15 @@ __pycache__
 
 # Brainstorming artifacts
 .superpowers
+
+# Dev tooling (local only)
+.agents
+.claude
+.continue
+skills
+skills-lock.json
+context_notes.md
+docs/workplace
+
+# Bridge env
+bridge/.env

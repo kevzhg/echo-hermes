@@ -37,7 +37,10 @@ export function ChatStage({ activeContext, activeThread, messages, skills, onSen
           <div className="text-sm text-zinc-500">Select a thread</div>
         )}
         {activeThread?.hermesSessionId && (
-          <SessionInfo sessionId={activeThread.hermesSessionId} />
+          <SessionInfo
+            sessionId={activeThread.hermesSessionId}
+            threadId={activeThread.id}
+          />
         )}
       </div>
 

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { db } from '../../db/index'
 
 interface SessionData {
   found: boolean
@@ -12,6 +14,7 @@ interface SessionData {
 
 interface SessionInfoProps {
   sessionId: string | undefined
+  threadId: string | null
 }
 
 // Known context windows per model (input token limits)
@@ -26,8 +29,14 @@ function formatTokens(n: number): string {
   return String(n)
 }
 
-export function SessionInfo({ sessionId }: SessionInfoProps) {
+export function SessionInfo({ sessionId, threadId }: SessionInfoProps) {
   const [data, setData] = useState<SessionData | null>(null)
+
+  // Reactively count messages for this thread — triggers refetch on new message
+  const messageCount = useLiveQuery(
+    () => threadId ? db.messages.where('threadId').equals(threadId).count() : 0,
+    [threadId],
+  ) ?? 0
 
   useEffect(() => {
     if (!sessionId) {
@@ -46,9 +55,8 @@ export function SessionInfo({ sessionId }: SessionInfoProps) {
       }
     }
     fetchData()
-    const interval = setInterval(fetchData, 5000)
-    return () => { cancelled = true; clearInterval(interval) }
-  }, [sessionId])
+    return () => { cancelled = true }
+  }, [sessionId, messageCount])
 
   if (!sessionId || !data?.found) return null
 

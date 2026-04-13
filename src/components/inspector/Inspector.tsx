@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { ChevronDown, ChevronRight, Search, Star, Zap } from 'lucide-react'
+import { ChevronDown, ChevronRight, Search, Star, X, Zap } from 'lucide-react'
 import type { Skill } from '../../types'
 import { SkillContextMenu } from './SkillContextMenu'
 
@@ -19,6 +19,7 @@ interface InspectorProps {
   onToggleFavorite: (skillId: string) => void
   onCloneSkill: (skillId: string) => void
   onDeleteSkill: (skillId: string) => void
+  onInjectSlashCommand?: (skillName: string) => void
 }
 
 export function Inspector({
@@ -28,6 +29,7 @@ export function Inspector({
   onToggleFavorite,
   onCloneSkill,
   onDeleteSkill,
+  onInjectSlashCommand,
 }: InspectorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Skills')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
@@ -67,10 +69,10 @@ export function Inspector({
     setContextMenu({ skillId, x: e.clientX, y: e.clientY })
   }, [])
 
-  const handlePinnedClick = useCallback((skillId: string) => {
-    // Left-click pinned skill → unpin (move back to all skills)
-    onTogglePin(skillId)
-  }, [onTogglePin])
+  const handlePinnedClick = useCallback((skillName: string) => {
+    // Left-click pinned skill → inject /skill-name into chat
+    onInjectSlashCommand?.(skillName)
+  }, [onInjectSlashCommand])
 
   const handleUnpinnedClick = useCallback((skillId: string) => {
     // Left-click unpinned → pin it (move to pinned tray)
@@ -124,15 +126,25 @@ export function Inspector({
                 {pinnedOpen && (
                   <div className="flex flex-wrap gap-1.5 mt-1 px-1">
                     {pinnedSkills.map(skill => (
-                      <button
+                      <span
                         key={skill.id}
-                        onClick={() => handlePinnedClick(skill.id)}
                         onContextMenu={e => handleContextMenu(e, skill.id)}
-                        className="inline-flex items-center gap-1 bg-emerald-500/12 border border-emerald-500/25 text-emerald-400 rounded px-2 py-1 text-xs hover:bg-emerald-500/20 transition-all"
+                        className="inline-flex items-center gap-1 bg-emerald-500/12 border border-emerald-500/25 text-emerald-400 rounded px-2 py-1 text-xs"
                       >
                         {skill.favorite && <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />}
-                        {skill.name}
-                      </button>
+                        <button
+                          onClick={() => handlePinnedClick(skill.name)}
+                          className="hover:text-emerald-300 transition-colors"
+                        >
+                          {skill.name}
+                        </button>
+                        <button
+                          onClick={() => onTogglePin(skill.id)}
+                          className="text-emerald-600 hover:text-emerald-300 transition-colors"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </span>
                     ))}
                   </div>
                 )}

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { AppShell } from './components/layout/AppShell'
 import { Sidebar } from './components/sidebar/Sidebar'
@@ -48,6 +48,8 @@ export default function App() {
     [activeThreadId]
   ) ?? []
 
+  const [pendingSlash, setPendingSlash] = useState<string | null>(null)
+
   const handleTogglePin = useCallback((skillId: string) => { toggleSkillPin(skillId) }, [])
   const handleToggleActive = useCallback((skillId: string) => { toggleSkillActive(skillId) }, [])
   const handleToggleFavorite = useCallback((skillId: string) => { toggleSkillFavorite(skillId) }, [])
@@ -81,6 +83,8 @@ export default function App() {
           messages={activeMessages}
           skills={skills}
           onSend={hermesSend}
+          pendingSlash={pendingSlash}
+          onPendingSlashConsumed={() => setPendingSlash(null)}
         />
       }
       inspector={
@@ -91,6 +95,7 @@ export default function App() {
           onToggleFavorite={handleToggleFavorite}
           onCloneSkill={handleCloneSkill}
           onDeleteSkill={handleDeleteSkill}
+          onInjectSlashCommand={(name) => setPendingSlash(name)}
         />
       }
     />

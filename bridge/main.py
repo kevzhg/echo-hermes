@@ -76,12 +76,13 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
 
             skills = data.get("skills", [])
             client_session_id = data.get("sessionId")
+            logger.info("WS MESSAGE: thread=%s, client_sessionId=%s, skills=%s", thread_id, client_session_id, skills)
 
-            # If client provides a session ID, always apply it (DB is source of truth)
-            if client_session_id:
-                session = manager.get_or_create(thread_id)
-                session.session_id = client_session_id
-                logger.info("Applied client session_id for thread %s: %s", thread_id, client_session_id)
+            # Always sync bridge's session state with client's sessionId (DB is source of truth)
+            # If client sends a value, use it. If client sends None/empty, clear it (start new session).
+            session = manager.get_or_create(thread_id)
+            session.session_id = client_session_id if client_session_id else None
+            logger.info("Session state for thread %s: session_id=%s", thread_id, session.session_id)
 
             # Signal that agent is thinking
             await websocket.send_json({"type": "thinking"})

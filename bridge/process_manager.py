@@ -112,7 +112,13 @@ class SubprocessManager:
                     f"stdout: {stdout_text[:500]}"
                 )
 
-            clean_output = strip_ansi(stdout_text).strip()
+            # Drop Hermes streaming-render lines (they end with \r\n)
+            # Final clean output uses pure \n. Keeping both causes duplicated text.
+            # Split on \n, filter lines that still have a \r at end (pre-strip).
+            raw_lines = stdout_text.split("\n")
+            final_lines = [line for line in raw_lines if not line.endswith("\r")]
+            dedup_text = "\n".join(final_lines)
+            clean_output = strip_ansi(dedup_text).strip()
             logger.info("CLEAN OUTPUT (last 200 chars): %s", repr(clean_output[-200:]))
 
             response, new_session_id = self._parse_output(clean_output)

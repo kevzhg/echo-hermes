@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import type { Context, Thread, Message, Skill } from '../../types'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
+import { SessionInfo } from './SessionInfo'
 
 interface ChatStageProps {
   activeContext: Context | null
@@ -24,16 +25,19 @@ export function ChatStage({ activeContext, activeThread, messages, skills, onSen
   return (
     <div className="h-full bg-[#0a0a0b] rounded-lg border border-zinc-800 flex flex-col">
       {/* Top bar */}
-      <div className="px-4 py-3 border-b border-zinc-800">
+      <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between gap-3">
         {activeContext && activeThread ? (
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-sm min-w-0">
             <span>{activeContext.emoji}</span>
-            <span className="text-zinc-400">{activeContext.name}</span>
+            <span className="text-zinc-400 truncate">{activeContext.name}</span>
             <span className="text-zinc-600">/</span>
-            <span className="font-medium text-white">{activeThread.name}</span>
+            <span className="font-medium text-white truncate">{activeThread.name}</span>
           </div>
         ) : (
           <div className="text-sm text-zinc-500">Select a thread</div>
+        )}
+        {activeThread?.hermesSessionId && (
+          <SessionInfo sessionId={activeThread.hermesSessionId} />
         )}
       </div>
 

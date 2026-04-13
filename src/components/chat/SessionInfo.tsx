@@ -19,12 +19,14 @@ interface SessionInfoProps {
 
 // Known context windows per model (input token limits)
 const CONTEXT_WINDOWS: Record<string, number> = {
-  'qwen/qwen3.6-plus': 128_000,
+  'qwen/qwen3.6-plus': 1_000_000,
   'claude-opus-4-6': 200_000,
   'claude-sonnet-4-6': 200_000,
 }
+const DEFAULT_CONTEXT_WINDOW = 1_000_000
 
 function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
   return String(n)
 }
@@ -61,7 +63,7 @@ export function SessionInfo({ sessionId, threadId }: SessionInfoProps) {
   if (!sessionId || !data?.found) return null
 
   const totalTokens = (data.input_tokens ?? 0) + (data.output_tokens ?? 0)
-  const contextWindow = CONTEXT_WINDOWS[data.model ?? ''] ?? 128_000
+  const contextWindow = CONTEXT_WINDOWS[data.model ?? ''] ?? DEFAULT_CONTEXT_WINDOW
   const pct = Math.min(100, Math.round((totalTokens / contextWindow) * 100))
 
   const barColor =

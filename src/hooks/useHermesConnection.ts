@@ -4,6 +4,7 @@ import {
   sendMessage,
   createStreamingMessage,
   appendToStreamingMessage,
+  updateStreamingMessage,
   finalizeStreamingMessage,
   failStreamingMessage,
   setThreadSessionId,

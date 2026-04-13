@@ -141,7 +141,7 @@ export function Inspector({
                 ) : (
                   <ChevronRight className="h-2.5 w-2.5" />
                 )}
-                <span>All Tools ({unpinnedSkills.length})</span>
+                <span>All Skills ({unpinnedSkills.length})</span>
               </button>
               {allToolsOpen && unpinnedGrouped.map(([category, catSkills]) => {
                 const isCatCollapsed = collapsedCats.has(category)

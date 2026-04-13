@@ -1,4 +1,5 @@
-import type { Context, Thread, Message } from '../../types'
+import { useCallback } from 'react'
+import type { Context, Thread, Message, Skill } from '../../types'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 
@@ -6,11 +7,16 @@ interface ChatStageProps {
   activeContext: Context | null
   activeThread: Thread | null
   messages: Message[]
-  onSend: (content: string) => void
+  skills: Skill[]
+  onSend: (content: string, oneshotSkills?: string[]) => void
 }
 
-export function ChatStage({ activeContext, activeThread, messages, onSend }: ChatStageProps) {
+export function ChatStage({ activeContext, activeThread, messages, skills, onSend }: ChatStageProps) {
   const isTyping = messages.some(m => m.status === 'streaming')
+
+  const handleSend = useCallback((content: string, oneshotSkills?: string[]) => {
+    onSend(content, oneshotSkills)
+  }, [onSend])
 
   return (
     <div className="h-full bg-[#0a0a0b] rounded-lg border border-zinc-800 flex flex-col">
@@ -28,7 +34,7 @@ export function ChatStage({ activeContext, activeThread, messages, onSend }: Cha
         )}
       </div>
 
-      {/* Message area — min-h-0 is CRITICAL for flex scroll */}
+      {/* Message area */}
       <div className="flex-1 min-h-0">
         {activeThread ? (
           <MessageList messages={messages} isTyping={isTyping} />
@@ -39,8 +45,8 @@ export function ChatStage({ activeContext, activeThread, messages, onSend }: Cha
         )}
       </div>
 
-      {/* Input — disabled while streaming */}
-      <ChatInput onSend={onSend} disabled={isTyping} />
+      {/* Input */}
+      <ChatInput onSend={handleSend} disabled={isTyping} skills={skills} />
     </div>
   )
 }

@@ -73,9 +73,9 @@ export const mockMessages: Message[] = [
 ]
 
 export const mockSkills: Skill[] = [
-  { id: 'skill-web', name: 'web_search', category: 'research', source: 'builtin', enabled: true },
-  { id: 'skill-code', name: 'code_exec', category: 'productivity', source: 'builtin', enabled: true },
-  { id: 'skill-memory', name: 'memory', category: 'productivity', source: 'builtin', enabled: true },
-  { id: 'skill-file', name: 'file_ops', category: 'productivity', source: 'builtin', enabled: false },
-  { id: 'skill-cron', name: 'cron', category: 'devops', source: 'builtin', enabled: true },
+  { id: 'skill-web', name: 'web_search', category: 'research', source: 'builtin', pinned: false },
+  { id: 'skill-code', name: 'code_exec', category: 'productivity', source: 'builtin', pinned: false },
+  { id: 'skill-memory', name: 'memory', category: 'productivity', source: 'builtin', pinned: false },
+  { id: 'skill-file', name: 'file_ops', category: 'productivity', source: 'builtin', pinned: false },
+  { id: 'skill-cron', name: 'cron', category: 'devops', source: 'builtin', pinned: false },
 ]

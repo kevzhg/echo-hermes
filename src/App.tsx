@@ -9,7 +9,7 @@ import { useWorkspace } from './hooks/useWorkspace'
 import { useHermesConnection } from './hooks/useHermesConnection'
 import { db, initDb } from './db/index'
 import type { Message } from './types'
-import { toggleSkill, syncSkillsFromBridge } from './db/operations'
+import { toggleSkillPin, syncSkillsFromBridge } from './db/operations'
 
 export default function App() {
   useEffect(() => { initDb().then(() => syncSkillsFromBridge()) }, [])
@@ -41,8 +41,8 @@ export default function App() {
     [activeThreadId]
   ) ?? []
 
-  const handleToggleSkill = useCallback((skillId: string) => {
-    toggleSkill(skillId)
+  const handleTogglePin = useCallback((skillId: string) => {
+    toggleSkillPin(skillId)
   }, [])
 
   return (
@@ -70,13 +70,14 @@ export default function App() {
           activeContext={activeContext}
           activeThread={activeThread}
           messages={activeMessages}
+          skills={skills}
           onSend={hermesSend}
         />
       }
       inspector={
         <Inspector
           skills={skills}
-          onToggleSkill={handleToggleSkill}
+          onTogglePin={handleTogglePin}
         />
       }
     />

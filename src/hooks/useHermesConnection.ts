@@ -113,7 +113,7 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     }
   }, [threadId])
 
-  const send = useCallback(async (content: string) => {
+  const send = useCallback(async (content: string, oneshotSkills?: string[]) => {
     const tid = threadIdRef.current
     const ws = wsRef.current
     if (!tid || !ws || ws.readyState !== WebSocket.OPEN) return
@@ -125,12 +125,17 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     const msgId = await createStreamingMessage(tid)
     currentMsgIdRef.current = msgId
 
-    // Collect enabled skills
-    const skills = await db.skills.filter(s => s.enabled).toArray()
-    const skillNames = skills.map(s => s.name)
+    // Merge pinned skills + one-shot skills (deduplicated)
+    const pinned = await db.skills.filter(s => s.pinned).toArray()
+    const pinnedNames = pinned.map(s => s.name)
+    const allSkills = [...new Set([...pinnedNames, ...(oneshotSkills ?? [])])]
 
     // Send to bridge
-    ws.send(JSON.stringify({ type: 'message', content, skills: skillNames }))
+    ws.send(JSON.stringify({
+      type: 'message',
+      content,
+      skills: allSkills.length > 0 ? allSkills : undefined,
+    }))
   }, [])
 
   return { sendMessage: send, isConnected }

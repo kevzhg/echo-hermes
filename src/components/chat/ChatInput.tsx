@@ -1,16 +1,22 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { Paperclip, ArrowUp } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { Paperclip, ArrowUp, X } from 'lucide-react'
+import type { Skill } from '../../types'
 
 interface ChatInputProps {
-  onSend: (message: string) => void
+  onSend: (message: string, oneshotSkills?: string[]) => void
   disabled?: boolean
+  skills?: Skill[]
 }
 
-export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
+export function ChatInput({ onSend, disabled = false, skills = [] }: ChatInputProps) {
   const [value, setValue] = useState('')
+  const [oneshotSkills, setOneshotSkills] = useState<string[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const hasText = value.trim().length > 0
   const canSend = hasText && !disabled
+
+  // Build skill name set for slash detection
+  const skillNames = useMemo(() => new Set(skills.map(s => s.name)), [skills])
 
   useEffect(() => {
     const el = textareaRef.current
@@ -19,11 +25,29 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
     el.style.height = Math.min(el.scrollHeight, 160) + 'px'
   }, [value])
 
+  // Detect /skill-name at start of input
+  useEffect(() => {
+    const match = value.match(/^\/(\S+)\s/)
+    if (match && skillNames.has(match[1])) {
+      const skillName = match[1]
+      if (!oneshotSkills.includes(skillName)) {
+        setOneshotSkills(prev => [...prev, skillName])
+      }
+      // Remove the slash command from the text
+      setValue(value.replace(/^\/\S+\s/, ''))
+    }
+  }, [value, skillNames, oneshotSkills])
+
+  const removeOneshot = (name: string) => {
+    setOneshotSkills(prev => prev.filter(s => s !== name))
+  }
+
   const handleSend = useCallback(() => {
     if (!canSend) return
-    onSend(value.trim())
+    onSend(value.trim(), oneshotSkills.length > 0 ? oneshotSkills : undefined)
     setValue('')
-  }, [value, canSend, onSend])
+    setOneshotSkills([])
+  }, [value, canSend, onSend, oneshotSkills])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -34,6 +58,23 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
 
   return (
     <div className="px-4 pb-3 pt-2">
+      {/* One-shot skill chips */}
+      {oneshotSkills.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {oneshotSkills.map(name => (
+            <span
+              key={name}
+              className="inline-flex items-center gap-1 bg-violet-500/15 border border-violet-500/25 text-violet-400 rounded px-2 py-0.5 text-xs"
+            >
+              <span>/{name}</span>
+              <button onClick={() => removeOneshot(name)} className="hover:text-violet-200">
+                <X className="h-2.5 w-2.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="bg-[#18181b] border border-zinc-800 rounded-lg flex items-end gap-2 px-3 py-2">
         <button className="text-zinc-500 hover:text-zinc-400 transition-colors pb-0.5">
           <Paperclip className="h-4 w-4" />
@@ -43,7 +84,7 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
           value={value}
           onChange={e => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={disabled ? 'Echo is thinking...' : 'Type a message...'}
+          placeholder={disabled ? 'Echo is thinking...' : 'Type /skill-name to activate a skill...'}
           disabled={disabled}
           rows={1}
           className="flex-1 bg-transparent text-sm text-zinc-200 placeholder-zinc-600 outline-none resize-none leading-relaxed disabled:opacity-50"

@@ -93,19 +93,19 @@ export async function syncSkillsFromBridge(): Promise<void> {
           incomingNames.add(s.name)
           const existing = existingByName.get(s.name)
           if (existing) {
-            // Update category/source, keep enabled state
+            // Update category/source, keep pinned state
             await db.skills.update(existing.id, {
               category: cat.category,
               source: s.source,
             })
           } else {
-            // New skill — default enabled
+            // New skill — default unpinned
             await db.skills.add({
               id: crypto.randomUUID(),
               name: s.name,
               category: cat.category,
               source: s.source,
-              enabled: true,
+              pinned: false,
             })
           }
         }
@@ -123,9 +123,9 @@ export async function syncSkillsFromBridge(): Promise<void> {
   }
 }
 
-export async function toggleSkill(skillId: string): Promise<void> {
+export async function toggleSkillPin(skillId: string): Promise<void> {
   const skill = await db.skills.get(skillId)
   if (skill) {
-    await db.skills.update(skillId, { enabled: !skill.enabled })
+    await db.skills.update(skillId, { pinned: !skill.pinned })
   }
 }

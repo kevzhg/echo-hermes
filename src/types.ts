@@ -33,7 +33,7 @@ export interface Skill {
   name: string
   category: string
   source: string
-  enabled: boolean
+  pinned: boolean
 }
 
 export interface SkillCategory {

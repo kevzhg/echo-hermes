@@ -25,6 +25,8 @@ interface SidebarProps {
   onToggleThreadFavorite: (threadId: string) => void
   onReorderThreads: (contextId: string, orderedIds: string[]) => void
   onReorderContexts: (orderedIds: string[]) => void
+  onRenameContext: (contextId: string, name: string, emoji: string) => void
+  onDeleteContext: (contextId: string) => void
 }
 
 export function Sidebar({
@@ -44,6 +46,8 @@ export function Sidebar({
   onToggleThreadFavorite,
   onReorderThreads,
   onReorderContexts,
+  onRenameContext,
+  onDeleteContext,
 }: SidebarProps) {
   const favoriteThreads = useMemo(
     () => contexts.flatMap(c => c.threads).filter(t => t.favorite),
@@ -90,6 +94,8 @@ export function Sidebar({
         onToggleThreadFavorite={onToggleThreadFavorite}
         onReorderThreads={onReorderThreads}
         onReorderContexts={onReorderContexts}
+        onRenameContext={onRenameContext}
+        onDeleteContext={onDeleteContext}
       />
 
       <div className="mt-2 pt-2 border-t border-zinc-800">

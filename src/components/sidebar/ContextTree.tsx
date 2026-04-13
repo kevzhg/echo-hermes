@@ -15,12 +15,15 @@ interface ContextTreeProps {
   onToggleThreadFavorite: (threadId: string) => void
   onReorderThreads: (contextId: string, orderedIds: string[]) => void
   onReorderContexts: (orderedIds: string[]) => void
+  onRenameContext: (contextId: string, name: string, emoji: string) => void
+  onDeleteContext: (contextId: string) => void
 }
 
 export function ContextTree({
   contexts, expandedContextIds, activeThreadId, onToggleContextExpanded,
   onSelectThread, onCreateThread, onRenameThread, onSetThreadSessionId,
   onDeleteThread, onToggleThreadFavorite, onReorderThreads, onReorderContexts,
+  onRenameContext, onDeleteContext,
 }: ContextTreeProps) {
   const [draggedCtxId, setDraggedCtxId] = useState<string | null>(null)
 
@@ -71,6 +74,8 @@ export function ContextTree({
           onContextDragStart={handleContextDragStart}
           onContextDragOver={handleContextDragOver}
           onContextDrop={handleContextDrop}
+          onRenameContext={onRenameContext}
+          onDeleteContext={onDeleteContext}
         />
       ))}
     </div>

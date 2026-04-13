@@ -14,20 +14,20 @@ interface ContextMenuState {
 
 interface InspectorProps {
   skills: Skill[]
+  onTogglePin: (skillId: string) => void
   onToggleActive: (skillId: string) => void
   onToggleFavorite: (skillId: string) => void
   onCloneSkill: (skillId: string) => void
   onDeleteSkill: (skillId: string) => void
-  onActivateSlashCommand?: (skillName: string) => void
 }
 
 export function Inspector({
   skills,
+  onTogglePin,
   onToggleActive,
   onToggleFavorite,
   onCloneSkill,
   onDeleteSkill,
-  onActivateSlashCommand,
 }: InspectorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Skills')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
@@ -37,11 +37,11 @@ export function Inspector({
   const [skillSearch, setSkillSearch] = useState('')
 
   const pinnedSkills = useMemo(
-    () => skills.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name)),
+    () => skills.filter(s => s.pinned).sort((a, b) => a.name.localeCompare(b.name)),
     [skills],
   )
   const unpinnedSkills = useMemo(
-    () => skills.filter(s => !s.active).sort((a, b) => {
+    () => skills.filter(s => !s.pinned).sort((a, b) => {
       if (a.favorite !== b.favorite) return a.favorite ? -1 : 1
       return a.name.localeCompare(b.name)
     }),
@@ -67,13 +67,18 @@ export function Inspector({
     setContextMenu({ skillId, x: e.clientX, y: e.clientY })
   }, [])
 
-  const handlePinnedClick = useCallback((skill: Skill) => {
-    // Left-click pinned skill → inject /skill-name into chat input
-    onActivateSlashCommand?.(skill.name)
-  }, [onActivateSlashCommand])
+  const handlePinnedClick = useCallback((skillId: string) => {
+    // Left-click pinned skill → unpin (move back to all skills)
+    onTogglePin(skillId)
+  }, [onTogglePin])
 
   const handleUnpinnedClick = useCallback((skillId: string) => {
-    // Left-click unpinned → pin it (move to active)
+    // Left-click unpinned → pin it (move to pinned tray)
+    onTogglePin(skillId)
+  }, [onTogglePin])
+
+  const handleActivateSkill = useCallback((skillId: string) => {
+    // Toggle active state (persistent purple pill in chat)
     onToggleActive(skillId)
   }, [onToggleActive])
 
@@ -121,7 +126,7 @@ export function Inspector({
                     {pinnedSkills.map(skill => (
                       <button
                         key={skill.id}
-                        onClick={() => handlePinnedClick(skill)}
+                        onClick={() => handlePinnedClick(skill.id)}
                         onContextMenu={e => handleContextMenu(e, skill.id)}
                         className="inline-flex items-center gap-1 bg-emerald-500/12 border border-emerald-500/25 text-emerald-400 rounded px-2 py-1 text-xs hover:bg-emerald-500/20 transition-all"
                       >
@@ -225,11 +230,13 @@ export function Inspector({
           x={contextMenu.x}
           y={contextMenu.y}
           isFavorite={contextSkill.favorite}
-          isPinned={contextSkill.active}
+          isPinned={contextSkill.pinned}
+          isActive={contextSkill.active}
+          onActivate={() => handleActivateSkill(contextMenu.skillId)}
           onFavorite={() => onToggleFavorite(contextMenu.skillId)}
           onEdit={() => {/* TODO: editor modal */}}
           onClone={() => onCloneSkill(contextMenu.skillId)}
-          onUnpin={() => onToggleActive(contextMenu.skillId)}
+          onUnpin={() => onTogglePin(contextMenu.skillId)}
           onDelete={() => onDeleteSkill(contextMenu.skillId)}
           onClose={() => setContextMenu(null)}
         />

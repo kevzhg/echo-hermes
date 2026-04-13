@@ -1,33 +1,25 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { Paperclip, ArrowUp, X } from 'lucide-react'
+import { Paperclip, ArrowUp, X, Zap } from 'lucide-react'
 import type { Skill } from '../../types'
 
 interface ChatInputProps {
   onSend: (message: string, oneshotSkills?: string[]) => void
   disabled?: boolean
   skills?: Skill[]
-  pendingSlashCommand?: string | null
-  onSlashCommandConsumed?: () => void
 }
 
-export function ChatInput({ onSend, disabled = false, skills = [], pendingSlashCommand, onSlashCommandConsumed }: ChatInputProps) {
+export function ChatInput({ onSend, disabled = false, skills = [] }: ChatInputProps) {
   const [value, setValue] = useState('')
   const [oneshotSkills, setOneshotSkills] = useState<string[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const hasText = value.trim().length > 0
   const canSend = hasText && !disabled
 
+  // Active skills from DB (persistent purple pills)
+  const activeSkills = useMemo(() => skills.filter(s => s.active), [skills])
+
   // Build skill name set for slash detection
   const skillNames = useMemo(() => new Set(skills.map(s => s.name)), [skills])
-
-  // Consume pending slash command from Inspector
-  useEffect(() => {
-    if (pendingSlashCommand && !oneshotSkills.includes(pendingSlashCommand)) {
-      setOneshotSkills(prev => [...prev, pendingSlashCommand])
-      onSlashCommandConsumed?.()
-      textareaRef.current?.focus()
-    }
-  }, [pendingSlashCommand, oneshotSkills, onSlashCommandConsumed])
 
   useEffect(() => {
     const el = textareaRef.current
@@ -44,7 +36,6 @@ export function ChatInput({ onSend, disabled = false, skills = [], pendingSlashC
       if (!oneshotSkills.includes(skillName)) {
         setOneshotSkills(prev => [...prev, skillName])
       }
-      // Remove the slash command from the text
       setValue(value.replace(/^\/\S+\s/, ''))
     }
   }, [value, skillNames, oneshotSkills])
@@ -55,10 +46,13 @@ export function ChatInput({ onSend, disabled = false, skills = [], pendingSlashC
 
   const handleSend = useCallback(() => {
     if (!canSend) return
-    onSend(value.trim(), oneshotSkills.length > 0 ? oneshotSkills : undefined)
+    // Merge active (persistent) + oneshot skills
+    const activeNames = activeSkills.map(s => s.name)
+    const allForced = [...new Set([...activeNames, ...oneshotSkills])]
+    onSend(value.trim(), allForced.length > 0 ? allForced : undefined)
     setValue('')
-    setOneshotSkills([])
-  }, [value, canSend, onSend, oneshotSkills])
+    setOneshotSkills([]) // Clear oneshot only, active persists
+  }, [value, canSend, onSend, oneshotSkills, activeSkills])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -67,15 +61,28 @@ export function ChatInput({ onSend, disabled = false, skills = [], pendingSlashC
     }
   }
 
+  const hasChips = activeSkills.length > 0 || oneshotSkills.length > 0
+
   return (
     <div className="px-4 pb-3 pt-2">
-      {/* One-shot skill chips */}
-      {oneshotSkills.length > 0 && (
+      {/* Skill pills */}
+      {hasChips && (
         <div className="flex flex-wrap gap-1.5 mb-2">
+          {/* Active skills — persistent, purple with zap icon */}
+          {activeSkills.map(skill => (
+            <span
+              key={`active-${skill.id}`}
+              className="inline-flex items-center gap-1 bg-violet-500/15 border border-violet-500/25 text-violet-400 rounded px-2 py-0.5 text-xs"
+            >
+              <Zap className="h-2.5 w-2.5" />
+              <span>{skill.name}</span>
+            </span>
+          ))}
+          {/* One-shot skills — from /slash, dismissible */}
           {oneshotSkills.map(name => (
             <span
-              key={name}
-              className="inline-flex items-center gap-1 bg-violet-500/15 border border-violet-500/25 text-violet-400 rounded px-2 py-0.5 text-xs"
+              key={`oneshot-${name}`}
+              className="inline-flex items-center gap-1 bg-violet-500/15 border border-violet-500/25 text-violet-300 rounded px-2 py-0.5 text-xs"
             >
               <span>/{name}</span>
               <button onClick={() => removeOneshot(name)} className="hover:text-violet-200">

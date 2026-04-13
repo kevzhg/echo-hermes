@@ -9,11 +9,9 @@ interface ChatStageProps {
   messages: Message[]
   skills: Skill[]
   onSend: (content: string, oneshotSkills?: string[]) => void
-  pendingSlashCommand?: string | null
-  onSlashCommandConsumed?: () => void
 }
 
-export function ChatStage({ activeContext, activeThread, messages, skills, onSend, pendingSlashCommand, onSlashCommandConsumed }: ChatStageProps) {
+export function ChatStage({ activeContext, activeThread, messages, skills, onSend }: ChatStageProps) {
   const isTyping = messages.some(m => m.status === 'streaming')
 
   const handleSend = useCallback((content: string, oneshotSkills?: string[]) => {
@@ -48,13 +46,7 @@ export function ChatStage({ activeContext, activeThread, messages, skills, onSen
       </div>
 
       {/* Input */}
-      <ChatInput
-        onSend={handleSend}
-        disabled={isTyping}
-        skills={skills}
-        pendingSlashCommand={pendingSlashCommand}
-        onSlashCommandConsumed={onSlashCommandConsumed}
-      />
+      <ChatInput onSend={handleSend} disabled={isTyping} skills={skills} />
     </div>
   )
 }

@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react'
-import { Star, Pencil, Copy, Pin, PinOff, Trash2 } from 'lucide-react'
+import { Zap, Star, Pencil, Copy, Pin, PinOff, Trash2 } from 'lucide-react'
 
 interface SkillContextMenuProps {
   x: number
   y: number
   isFavorite: boolean
   isPinned: boolean
+  isActive: boolean
+  onActivate: () => void
   onFavorite: () => void
   onEdit: () => void
   onClone: () => void
@@ -16,16 +18,22 @@ interface SkillContextMenuProps {
 
 const menuItems = (props: SkillContextMenuProps) => [
   {
+    icon: Zap,
+    label: props.isActive ? 'Deactivate' : 'Activate',
+    action: props.onActivate,
+    color: props.isActive ? 'text-violet-400' : 'text-violet-400',
+  },
+  {
     icon: Star,
     label: props.isFavorite ? 'Unfavorite' : 'Favorite',
     action: props.onFavorite,
     color: props.isFavorite ? 'text-amber-400' : 'text-zinc-400',
   },
-  { icon: Pencil, label: 'Edit', action: props.onEdit, color: 'text-zinc-400' },
-  { icon: Copy, label: 'Clone', action: props.onClone, color: 'text-zinc-400' },
   props.isPinned
     ? { icon: PinOff, label: 'Unpin', action: props.onUnpin, color: 'text-zinc-400' }
     : { icon: Pin, label: 'Pin', action: props.onUnpin, color: 'text-emerald-400' },
+  { icon: Pencil, label: 'Edit', action: props.onEdit, color: 'text-zinc-400' },
+  { icon: Copy, label: 'Clone', action: props.onClone, color: 'text-zinc-400' },
   { icon: Trash2, label: 'Delete', action: props.onDelete, color: 'text-red-400' },
 ]
 

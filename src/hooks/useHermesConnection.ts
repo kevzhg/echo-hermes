@@ -3,7 +3,8 @@ import { db } from '../db/index'
 import {
   sendMessage,
   createStreamingMessage,
-  updateStreamingMessage,
+  appendToStreamingMessage,
+  finalizeStreamingMessage,
   failStreamingMessage,
   setThreadSessionId,
 } from '../db/operations'
@@ -56,10 +57,20 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     ws.onmessage = async (event) => {
       const data = JSON.parse(event.data)
 
-      if (data.type === 'done') {
+      if (data.type === 'chunk') {
+        const msgId = currentMsgIdRef.current
+        if (msgId && data.content) {
+          await appendToStreamingMessage(msgId, data.content)
+        }
+      } else if (data.type === 'done') {
         const msgId = currentMsgIdRef.current
         if (msgId) {
-          await updateStreamingMessage(msgId, data.content)
+          // If content was sent in done (non-streaming fallback), set it; otherwise just finalize
+          if (typeof data.content === 'string' && data.content.length > 0) {
+            await updateStreamingMessage(msgId, data.content)
+          } else {
+            await finalizeStreamingMessage(msgId)
+          }
           currentMsgIdRef.current = null
         }
         // Auto-link session ID on first message for empty threads

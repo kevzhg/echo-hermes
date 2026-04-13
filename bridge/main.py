@@ -1,7 +1,9 @@
 """Echo-Hermes Bridge — FastAPI WebSocket server connecting Echo frontend to Hermes CLI."""
 
+import asyncio
 import json
 import logging
+import re
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
@@ -98,8 +100,17 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
 
             try:
                 response, session_id = await manager.run_message(thread_id, content, skills=skills)
-                logger.info("Sending done: thread=%s, sessionId=%s, response_len=%d", thread_id, session_id, len(response))
-                await websocket.send_json({"type": "done", "content": response, "sessionId": session_id})
+                logger.info("Streaming response: thread=%s, sessionId=%s, response_len=%d", thread_id, session_id, len(response))
+
+                # Fake-stream: split response into chunks and send with small delay.
+                # Hermes -Q flushes full output at end, so real streaming from subprocess isn't possible.
+                # Split preserving whitespace so markdown/code blocks reconstruct correctly.
+                chunks = re.findall(r"\S+\s*|\s+", response)
+                for chunk in chunks:
+                    await websocket.send_json({"type": "chunk", "content": chunk})
+                    await asyncio.sleep(0.015)
+
+                await websocket.send_json({"type": "done", "sessionId": session_id})
             except Exception as e:
                 logger.exception("Error running Hermes for thread %s", thread_id)
                 await websocket.send_json({"type": "error", "message": str(e)})

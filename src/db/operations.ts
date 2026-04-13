@@ -111,6 +111,16 @@ export async function updateStreamingMessage(messageId: string, content: string)
   await db.messages.update(messageId, { content, status: 'sent' })
 }
 
+export async function appendToStreamingMessage(messageId: string, chunk: string): Promise<void> {
+  await db.messages.where('id').equals(messageId).modify(m => {
+    m.content = (m.content ?? '') + chunk
+  })
+}
+
+export async function finalizeStreamingMessage(messageId: string): Promise<void> {
+  await db.messages.update(messageId, { status: 'sent' })
+}
+
 export async function failStreamingMessage(messageId: string, error: string): Promise<void> {
   await db.messages.update(messageId, { content: error, status: 'error' })
 }

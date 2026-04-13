@@ -39,12 +39,21 @@ export function Inspector({
   )
   const unpinnedSkills = useMemo(
     () => skills.filter(s => !s.active).sort((a, b) => {
-      // Favorites first, then alphabetical
       if (a.favorite !== b.favorite) return a.favorite ? -1 : 1
       return a.name.localeCompare(b.name)
     }),
     [skills],
   )
+
+  const unpinnedGrouped = useMemo(() => {
+    const map = new Map<string, Skill[]>()
+    for (const s of unpinnedSkills) {
+      const cat = s.category || 'Uncategorized'
+      if (!map.has(cat)) map.set(cat, [])
+      map.get(cat)!.push(s)
+    }
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  }, [unpinnedSkills])
 
   const handleContextMenu = useCallback((e: React.MouseEvent, skillId: string) => {
     e.preventDefault()
@@ -119,27 +128,32 @@ export function Inspector({
               </div>
             )}
 
-            {/* Section B: All other tools — flat pile, expanded by default */}
+            {/* Section B: All other tools — grouped by category, expanded */}
             <div>
               <div className="text-[10px] text-zinc-500 uppercase tracking-wider px-1 mb-1.5">
                 All Tools ({unpinnedSkills.length})
               </div>
-              <div className="flex flex-wrap gap-1.5 px-1">
-                {unpinnedSkills.map(skill => (
-                  <button
-                    key={skill.id}
-                    onClick={() => handleUnpinnedClick(skill.id)}
-                    onContextMenu={e => handleContextMenu(e, skill.id)}
-                    className="inline-flex items-center gap-1 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded px-2 py-1 text-xs hover:border-zinc-500 hover:text-zinc-300 transition-all"
-                  >
-                    {skill.favorite && <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />}
-                    {skill.name}
-                    {skill.source === 'local' && (
-                      <span className="text-[8px] text-blue-400 bg-blue-400/10 rounded px-0.5">L</span>
-                    )}
-                  </button>
-                ))}
-              </div>
+              {unpinnedGrouped.map(([category, catSkills]) => (
+                <div key={category} className="mb-2">
+                  <div className="text-[10px] text-zinc-600 capitalize px-1 mb-1">{category}</div>
+                  <div className="flex flex-wrap gap-1.5 px-1">
+                    {catSkills.map(skill => (
+                      <button
+                        key={skill.id}
+                        onClick={() => handleUnpinnedClick(skill.id)}
+                        onContextMenu={e => handleContextMenu(e, skill.id)}
+                        className="inline-flex items-center gap-1 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded px-2 py-1 text-xs hover:border-zinc-500 hover:text-zinc-300 transition-all"
+                      >
+                        {skill.favorite && <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />}
+                        {skill.name}
+                        {skill.source === 'local' && (
+                          <span className="text-[8px] text-blue-400 bg-blue-400/10 rounded px-0.5">L</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}

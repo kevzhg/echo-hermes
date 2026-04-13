@@ -32,6 +32,12 @@ export function ChatStage({ activeContext, activeThread, messages, skills, onSen
             <span className="text-zinc-400 truncate">{activeContext.name}</span>
             <span className="text-zinc-600">/</span>
             <span className="font-medium text-white truncate">{activeThread.name}</span>
+            {activeThread.hermesSessionId && (
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.5)] shrink-0"
+                title={`Session ${activeThread.hermesSessionId} loaded`}
+              />
+            )}
           </div>
         ) : (
           <div className="text-sm text-zinc-500">Select a thread</div>

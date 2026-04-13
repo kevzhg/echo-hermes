@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+import re
 import shutil
 import time
 from dataclasses import dataclass, field
@@ -20,15 +21,18 @@ HERMES_COMMAND = (
 PROCESS_TIMEOUT = int(os.getenv("PROCESS_TIMEOUT", "3600"))
 
 
+_RESUME_LINE = re.compile(r"^\W*Resumed session\b")
+
+
 def _strip_banners(lines: list[str]) -> list[str]:
     """Remove Hermes CLI banner/decorative lines from response output."""
     result = []
     for line in lines:
         stripped = line.strip()
-        # Skip resumed session banner: "↺ Resumed session XXX ..."
-        if stripped.startswith("↺ Resumed session") or stripped.startswith("Resumed session"):
+        # Skip resumed session banner: any arrow char + "Resumed session ..."
+        if _RESUME_LINE.match(stripped):
             continue
-        # Skip Hermes decorative line with unicode box-drawing chars: "╭── ⚗ Hermes ───..."
+        # Skip Hermes decorative line with unicode box-drawing chars: "╭── ⚕ Hermes ───..."
         if "Hermes" in stripped and any(c in stripped for c in ("╭", "╮", "╰", "╯", "─", "━")):
             continue
         # Skip pure horizontal rule lines

@@ -48,7 +48,7 @@ export default function App() {
     [activeThreadId]
   ) ?? []
 
-  const [pendingSlash, setPendingSlash] = useState<string | null>(null)
+  const [pendingText, setPendingText] = useState<string | null>(null)
 
   const handleTogglePin = useCallback((skillId: string) => { toggleSkillPin(skillId) }, [])
   const handleToggleActive = useCallback((skillId: string) => { toggleSkillActive(skillId) }, [])
@@ -83,8 +83,8 @@ export default function App() {
           messages={activeMessages}
           skills={skills}
           onSend={hermesSend}
-          pendingSlash={pendingSlash}
-          onPendingSlashConsumed={() => setPendingSlash(null)}
+          pendingText={pendingText}
+          onPendingTextConsumed={() => setPendingText(null)}
         />
       }
       inspector={
@@ -95,7 +95,7 @@ export default function App() {
           onToggleFavorite={handleToggleFavorite}
           onCloneSkill={handleCloneSkill}
           onDeleteSkill={handleDeleteSkill}
-          onInjectSlashCommand={(name) => setPendingSlash(name)}
+          onInjectSkillName={(name) => setPendingText(name)}
         />
       }
     />

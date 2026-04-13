@@ -19,7 +19,7 @@ interface InspectorProps {
   onToggleFavorite: (skillId: string) => void
   onCloneSkill: (skillId: string) => void
   onDeleteSkill: (skillId: string) => void
-  onInjectSlashCommand?: (skillName: string) => void
+  onInjectSkillName?: (skillName: string) => void
 }
 
 export function Inspector({
@@ -29,7 +29,7 @@ export function Inspector({
   onToggleFavorite,
   onCloneSkill,
   onDeleteSkill,
-  onInjectSlashCommand,
+  onInjectSkillName,
 }: InspectorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Skills')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
@@ -70,9 +70,9 @@ export function Inspector({
   }, [])
 
   const handlePinnedClick = useCallback((skillName: string) => {
-    // Left-click pinned skill → inject /skill-name into chat
-    onInjectSlashCommand?.(skillName)
-  }, [onInjectSlashCommand])
+    // Left-click pinned skill → type skill name into chat
+    onInjectSkillName?.(skillName)
+  }, [onInjectSkillName])
 
   const handleUnpinnedClick = useCallback((skillId: string) => {
     // Left-click unpinned → pin it (move to pinned tray)
@@ -125,27 +125,35 @@ export function Inspector({
                 </button>
                 {pinnedOpen && (
                   <div className="flex flex-wrap gap-1.5 mt-1 px-1">
-                    {pinnedSkills.map(skill => (
-                      <span
-                        key={skill.id}
-                        onContextMenu={e => handleContextMenu(e, skill.id)}
-                        className="inline-flex items-center gap-1 bg-emerald-500/12 border border-emerald-500/25 text-emerald-400 rounded px-2 py-1 text-xs"
-                      >
-                        {skill.favorite && <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />}
-                        <button
-                          onClick={() => handlePinnedClick(skill.name)}
-                          className="hover:text-emerald-300 transition-colors"
+                    {pinnedSkills.map(skill => {
+                      const isActivated = skill.active
+                      return (
+                        <span
+                          key={skill.id}
+                          onContextMenu={e => handleContextMenu(e, skill.id)}
+                          className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs ${
+                            isActivated
+                              ? 'bg-violet-500/15 border border-violet-500/25 text-violet-400'
+                              : 'bg-emerald-500/12 border border-emerald-500/25 text-emerald-400'
+                          }`}
                         >
-                          {skill.name}
-                        </button>
-                        <button
-                          onClick={() => onTogglePin(skill.id)}
-                          className="text-emerald-600 hover:text-emerald-300 transition-colors"
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </button>
-                      </span>
-                    ))}
+                          {isActivated && <Zap className="h-2.5 w-2.5" />}
+                          {skill.favorite && <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />}
+                          <button
+                            onClick={() => handlePinnedClick(skill.name)}
+                            className={`transition-colors ${isActivated ? 'hover:text-violet-300' : 'hover:text-emerald-300'}`}
+                          >
+                            {skill.name}
+                          </button>
+                          <button
+                            onClick={() => onTogglePin(skill.id)}
+                            className={`transition-colors ${isActivated ? 'text-violet-600 hover:text-violet-300' : 'text-emerald-600 hover:text-emerald-300'}`}
+                          >
+                            <X className="h-2.5 w-2.5" />
+                          </button>
+                        </span>
+                      )
+                    })}
                   </div>
                 )}
                 <div className="border-b border-zinc-800 mt-2 mb-1" />

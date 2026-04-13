@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import type { Context, Thread, Message, Skill } from '../../types'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
@@ -8,16 +8,17 @@ interface ChatStageProps {
   activeThread: Thread | null
   messages: Message[]
   skills: Skill[]
-  onSend: (content: string, oneshotSkills?: string[]) => void
-  pendingSlash?: string | null
-  onPendingSlashConsumed?: () => void
+  onSend: (content: string, forcedSkills?: string[]) => void
+  pendingText?: string | null
+  onPendingTextConsumed?: () => void
 }
 
-export function ChatStage({ activeContext, activeThread, messages, skills, onSend, pendingSlash, onPendingSlashConsumed }: ChatStageProps) {
+export function ChatStage({ activeContext, activeThread, messages, skills, onSend, pendingText, onPendingTextConsumed }: ChatStageProps) {
+  const [inputValue, setInputValue] = useState('')
   const isTyping = messages.some(m => m.status === 'streaming')
 
-  const handleSend = useCallback((content: string, oneshotSkills?: string[]) => {
-    onSend(content, oneshotSkills)
+  const handleSend = useCallback((content: string, forcedSkills?: string[]) => {
+    onSend(content, forcedSkills)
   }, [onSend])
 
   return (
@@ -52,8 +53,10 @@ export function ChatStage({ activeContext, activeThread, messages, skills, onSen
         onSend={handleSend}
         disabled={isTyping}
         skills={skills}
-        pendingSlash={pendingSlash}
-        onPendingSlashConsumed={onPendingSlashConsumed}
+        value={inputValue}
+        onChange={setInputValue}
+        pendingText={pendingText}
+        onPendingTextConsumed={onPendingTextConsumed}
       />
     </div>
   )

@@ -6,9 +6,11 @@ interface ChatInputProps {
   onSend: (message: string, oneshotSkills?: string[]) => void
   disabled?: boolean
   skills?: Skill[]
+  pendingSlashCommand?: string | null
+  onSlashCommandConsumed?: () => void
 }
 
-export function ChatInput({ onSend, disabled = false, skills = [] }: ChatInputProps) {
+export function ChatInput({ onSend, disabled = false, skills = [], pendingSlashCommand, onSlashCommandConsumed }: ChatInputProps) {
   const [value, setValue] = useState('')
   const [oneshotSkills, setOneshotSkills] = useState<string[]>([])
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -17,6 +19,15 @@ export function ChatInput({ onSend, disabled = false, skills = [] }: ChatInputPr
 
   // Build skill name set for slash detection
   const skillNames = useMemo(() => new Set(skills.map(s => s.name)), [skills])
+
+  // Consume pending slash command from Inspector
+  useEffect(() => {
+    if (pendingSlashCommand && !oneshotSkills.includes(pendingSlashCommand)) {
+      setOneshotSkills(prev => [...prev, pendingSlashCommand])
+      onSlashCommandConsumed?.()
+      textareaRef.current?.focus()
+    }
+  }, [pendingSlashCommand, oneshotSkills, onSlashCommandConsumed])
 
   useEffect(() => {
     const el = textareaRef.current

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Star, Pencil, Copy, PinOff, Trash2 } from 'lucide-react'
+import { Star, Pencil, Copy, Pin, PinOff, Trash2 } from 'lucide-react'
 
 interface SkillContextMenuProps {
   x: number
@@ -23,9 +23,9 @@ const menuItems = (props: SkillContextMenuProps) => [
   },
   { icon: Pencil, label: 'Edit', action: props.onEdit, color: 'text-zinc-400' },
   { icon: Copy, label: 'Clone', action: props.onClone, color: 'text-zinc-400' },
-  ...(props.isPinned
-    ? [{ icon: PinOff, label: 'Unpin', action: props.onUnpin, color: 'text-zinc-400' }]
-    : []),
+  props.isPinned
+    ? { icon: PinOff, label: 'Unpin', action: props.onUnpin, color: 'text-zinc-400' }
+    : { icon: Pin, label: 'Pin', action: props.onUnpin, color: 'text-emerald-400' },
   { icon: Trash2, label: 'Delete', action: props.onDelete, color: 'text-red-400' },
 ]
 

@@ -14,49 +14,52 @@ interface ContextMenuState {
 
 interface InspectorProps {
   skills: Skill[]
-  onTogglePin: (skillId: string) => void
   onToggleActive: (skillId: string) => void
   onToggleFavorite: (skillId: string) => void
   onCloneSkill: (skillId: string) => void
   onDeleteSkill: (skillId: string) => void
+  onActivateSlashCommand?: (skillName: string) => void
 }
 
 export function Inspector({
   skills,
-  onTogglePin,
   onToggleActive,
   onToggleFavorite,
   onCloneSkill,
   onDeleteSkill,
+  onActivateSlashCommand,
 }: InspectorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Skills')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
-  const [activesTrayOpen, setActivesTrayOpen] = useState(false)
+  const [pinnedOpen, setPinnedOpen] = useState(false)
 
-  const activeSkills = useMemo(() => skills.filter(s => s.active), [skills])
-
-  // Group by category — all categories open by default
-  const grouped = useMemo(() => {
-    const map = new Map<string, Skill[]>()
-    for (const skill of skills) {
-      const cat = skill.category || 'Uncategorized'
-      if (!map.has(cat)) map.set(cat, [])
-      map.get(cat)!.push(skill)
-    }
-    // Sort skills within each category alphabetically
-    for (const arr of map.values()) {
-      arr.sort((a, b) => a.name.localeCompare(b.name))
-    }
-    // Sort categories: favorites-bearing first, then alphabetical
-    const entries = [...map.entries()]
-    entries.sort((a, b) => a[0].localeCompare(b[0]))
-    return entries
-  }, [skills])
+  const pinnedSkills = useMemo(
+    () => skills.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name)),
+    [skills],
+  )
+  const unpinnedSkills = useMemo(
+    () => skills.filter(s => !s.active).sort((a, b) => {
+      // Favorites first, then alphabetical
+      if (a.favorite !== b.favorite) return a.favorite ? -1 : 1
+      return a.name.localeCompare(b.name)
+    }),
+    [skills],
+  )
 
   const handleContextMenu = useCallback((e: React.MouseEvent, skillId: string) => {
     e.preventDefault()
     setContextMenu({ skillId, x: e.clientX, y: e.clientY })
   }, [])
+
+  const handlePinnedClick = useCallback((skill: Skill) => {
+    // Left-click pinned skill → inject /skill-name into chat input
+    onActivateSlashCommand?.(skill.name)
+  }, [onActivateSlashCommand])
+
+  const handleUnpinnedClick = useCallback((skillId: string) => {
+    // Left-click unpinned → pin it (move to active)
+    onToggleActive(skillId)
+  }, [onToggleActive])
 
   const contextSkill = contextMenu ? skills.find(s => s.id === contextMenu.skillId) : null
 
@@ -79,90 +82,65 @@ export function Inspector({
         ))}
       </div>
 
-      {/* Tab content */}
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'Skills' && (
           <div className="flex flex-col gap-2">
-            {/* Forced/Active tray — collapsed by default */}
-            {activeSkills.length > 0 && (
+            {/* Section A: Pinned/Active — collapsed by default */}
+            {pinnedSkills.length > 0 && (
               <div>
                 <button
-                  onClick={() => setActivesTrayOpen(prev => !prev)}
+                  onClick={() => setPinnedOpen(prev => !prev)}
                   className="w-full flex items-center gap-1.5 text-[10px] text-zinc-500 uppercase tracking-wider px-1 py-1 hover:text-zinc-400 transition-colors"
                 >
-                  {activesTrayOpen ? (
+                  {pinnedOpen ? (
                     <ChevronDown className="h-2.5 w-2.5" />
                   ) : (
                     <ChevronRight className="h-2.5 w-2.5" />
                   )}
                   <Zap className="h-2.5 w-2.5 text-emerald-500" />
-                  <span>Forced ({activeSkills.length})</span>
+                  <span>Active Skills ({pinnedSkills.length})</span>
                 </button>
-                {activesTrayOpen && (
-                  <div className="flex flex-wrap gap-1.5 mt-1 mb-1">
-                    {activeSkills.map(skill => (
+                {pinnedOpen && (
+                  <div className="flex flex-wrap gap-1.5 mt-1 px-1">
+                    {pinnedSkills.map(skill => (
                       <button
                         key={skill.id}
-                        onClick={() => onToggleActive(skill.id)}
+                        onClick={() => handlePinnedClick(skill)}
                         onContextMenu={e => handleContextMenu(e, skill.id)}
-                        className="inline-flex items-center gap-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded px-2 py-1 text-xs shadow-[0_0_6px_rgba(16,185,129,0.12)] hover:bg-emerald-500/25 transition-all"
+                        className="inline-flex items-center gap-1 bg-emerald-500/12 border border-emerald-500/25 text-emerald-400 rounded px-2 py-1 text-xs hover:bg-emerald-500/20 transition-all"
                       >
+                        {skill.favorite && <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />}
                         {skill.name}
                       </button>
                     ))}
                   </div>
                 )}
+                <div className="border-b border-zinc-800 mt-2 mb-1" />
               </div>
             )}
 
-            {/* Category groups — all open by default */}
-            {grouped.map(([category, categorySkills]) => {
-              const activeCount = categorySkills.filter(s => s.active).length
-
-              return (
-                <div key={category}>
-                  {/* Category header */}
-                  <div className="flex items-center gap-1.5 px-1 py-1 text-[10px] text-zinc-500 uppercase tracking-wider">
-                    <span className="capitalize text-zinc-400">{category}</span>
-                    {activeCount > 0 && (
-                      <span className="text-emerald-500">{activeCount}</span>
+            {/* Section B: All other tools — flat pile, expanded by default */}
+            <div>
+              <div className="text-[10px] text-zinc-500 uppercase tracking-wider px-1 mb-1.5">
+                All Tools ({unpinnedSkills.length})
+              </div>
+              <div className="flex flex-wrap gap-1.5 px-1">
+                {unpinnedSkills.map(skill => (
+                  <button
+                    key={skill.id}
+                    onClick={() => handleUnpinnedClick(skill.id)}
+                    onContextMenu={e => handleContextMenu(e, skill.id)}
+                    className="inline-flex items-center gap-1 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded px-2 py-1 text-xs hover:border-zinc-500 hover:text-zinc-300 transition-all"
+                  >
+                    {skill.favorite && <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />}
+                    {skill.name}
+                    {skill.source === 'local' && (
+                      <span className="text-[8px] text-blue-400 bg-blue-400/10 rounded px-0.5">L</span>
                     )}
-                    <span className="text-zinc-700">({categorySkills.length})</span>
-                  </div>
-
-                  {/* Skills in category */}
-                  <div className="flex flex-col gap-0.5">
-                    {categorySkills.map(skill => (
-                      <button
-                        key={skill.id}
-                        onClick={() => onToggleActive(skill.id)}
-                        onContextMenu={e => handleContextMenu(e, skill.id)}
-                        className={`w-full flex items-center gap-2 rounded px-2 py-1.5 text-xs transition-all text-left ${
-                          skill.active
-                            ? 'bg-emerald-500/8 border border-emerald-500/20 text-emerald-400'
-                            : 'text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300 border border-transparent'
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 transition-all ${
-                          skill.active
-                            ? 'bg-emerald-400 shadow-[0_0_4px_rgba(16,185,129,0.4)]'
-                            : 'bg-zinc-700'
-                        }`} />
-                        <span className="font-mono truncate">{skill.name}</span>
-                        {skill.favorite && (
-                          <Star className="h-2.5 w-2.5 text-amber-500 shrink-0 fill-amber-500" />
-                        )}
-                        {skill.source === 'local' && (
-                          <span className="text-[9px] text-blue-400 bg-blue-400/10 rounded px-1 py-0.5 shrink-0 ml-auto">
-                            local
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )
-            })}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -185,11 +163,11 @@ export function Inspector({
           x={contextMenu.x}
           y={contextMenu.y}
           isFavorite={contextSkill.favorite}
-          isPinned={contextSkill.pinned}
+          isPinned={contextSkill.active}
           onFavorite={() => onToggleFavorite(contextMenu.skillId)}
-          onEdit={() => {/* TODO: open editor modal */}}
+          onEdit={() => {/* TODO: editor modal */}}
           onClone={() => onCloneSkill(contextMenu.skillId)}
-          onUnpin={() => onTogglePin(contextMenu.skillId)}
+          onUnpin={() => onToggleActive(contextMenu.skillId)}
           onDelete={() => onDeleteSkill(contextMenu.skillId)}
           onClose={() => setContextMenu(null)}
         />

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { AppShell } from './components/layout/AppShell'
 import { Sidebar } from './components/sidebar/Sidebar'
@@ -10,7 +10,6 @@ import { useHermesConnection } from './hooks/useHermesConnection'
 import { db, initDb } from './db/index'
 import type { Message } from './types'
 import {
-  toggleSkillPin,
   toggleSkillActive,
   toggleSkillFavorite,
   cloneSkill,
@@ -48,7 +47,12 @@ export default function App() {
     [activeThreadId]
   ) ?? []
 
-  const handleTogglePin = useCallback((skillId: string) => { toggleSkillPin(skillId) }, [])
+  const [pendingSlashCommand, setPendingSlashCommand] = useState<string | null>(null)
+
+  const handleActivateSlashCommand = useCallback((skillName: string) => {
+    setPendingSlashCommand(skillName)
+  }, [])
+
   const handleToggleActive = useCallback((skillId: string) => { toggleSkillActive(skillId) }, [])
   const handleToggleFavorite = useCallback((skillId: string) => { toggleSkillFavorite(skillId) }, [])
   const handleCloneSkill = useCallback((skillId: string) => { cloneSkill(skillId) }, [])
@@ -81,16 +85,18 @@ export default function App() {
           messages={activeMessages}
           skills={skills}
           onSend={hermesSend}
+          pendingSlashCommand={pendingSlashCommand}
+          onSlashCommandConsumed={() => setPendingSlashCommand(null)}
         />
       }
       inspector={
         <Inspector
           skills={skills}
-          onTogglePin={handleTogglePin}
           onToggleActive={handleToggleActive}
           onToggleFavorite={handleToggleFavorite}
           onCloneSkill={handleCloneSkill}
           onDeleteSkill={handleDeleteSkill}
+          onActivateSlashCommand={handleActivateSlashCommand}
         />
       }
     />

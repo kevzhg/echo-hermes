@@ -62,12 +62,13 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
           await updateStreamingMessage(msgId, data.content)
           currentMsgIdRef.current = null
         }
-        // Store Hermes session ID on thread if returned
+        // Only auto-link session ID on first message (don't overwrite manually-set IDs)
         if (data.sessionId && threadIdRef.current) {
-          console.log('[Echo] Storing sessionId on thread:', threadIdRef.current, '→', data.sessionId)
-          await setThreadSessionId(threadIdRef.current, data.sessionId)
-        } else {
-          console.log('[Echo] No sessionId in done response:', { sessionId: data.sessionId, threadId: threadIdRef.current })
+          const thread = await db.threads.get(threadIdRef.current)
+          if (!thread?.hermesSessionId) {
+            console.log('[Echo] Auto-linking sessionId:', threadIdRef.current, '→', data.sessionId)
+            await setThreadSessionId(threadIdRef.current, data.sessionId)
+          }
         }
       } else if (data.type === 'error') {
         const msgId = currentMsgIdRef.current

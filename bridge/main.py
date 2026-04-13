@@ -77,11 +77,11 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
             skills = data.get("skills", [])
             client_session_id = data.get("sessionId")
 
-            # If client provides a session ID, seed the bridge's session map
+            # If client provides a session ID, always apply it (DB is source of truth)
             if client_session_id:
                 session = manager.get_or_create(thread_id)
-                if not session.session_id:
-                    session.session_id = client_session_id
+                session.session_id = client_session_id
+                logger.info("Applied client session_id for thread %s: %s", thread_id, client_session_id)
 
             # Signal that agent is thinking
             await websocket.send_json({"type": "thinking"})

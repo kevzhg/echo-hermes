@@ -16,6 +16,9 @@ import {
   cloneSkill,
   deleteSkill,
   syncSkillsFromBridge,
+  renameThread,
+  setThreadSessionId,
+  deleteThread,
 } from './db/operations'
 
 export default function App() {
@@ -74,6 +77,9 @@ export default function App() {
           onSelectThread={setActiveThread}
           onCreateContext={createContext}
           onCreateThread={createThread}
+          onRenameThread={(id, name) => renameThread(id, name)}
+          onSetThreadSessionId={(id, sid) => setThreadSessionId(id, sid)}
+          onDeleteThread={(id) => deleteThread(id)}
         />
       }
       main={

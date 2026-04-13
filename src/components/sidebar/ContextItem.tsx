@@ -11,6 +11,9 @@ interface ContextItemProps {
   onToggleExpand: () => void
   onSelectThread: (threadId: string) => void
   onCreateThread: (contextId: string, name: string) => Promise<string>
+  onRenameThread: (threadId: string, name: string) => void
+  onSetThreadSessionId: (threadId: string, sessionId?: string) => void
+  onDeleteThread: (threadId: string) => void
 }
 
 export function ContextItem({
@@ -20,6 +23,9 @@ export function ContextItem({
   onToggleExpand,
   onSelectThread,
   onCreateThread,
+  onRenameThread,
+  onSetThreadSessionId,
+  onDeleteThread,
 }: ContextItemProps) {
   const [isCreatingThread, setIsCreatingThread] = useState(false)
 
@@ -51,6 +57,9 @@ export function ContextItem({
               thread={thread}
               isActive={thread.id === activeThreadId}
               onClick={() => onSelectThread(thread.id)}
+              onRename={onRenameThread}
+              onSetSessionId={onSetThreadSessionId}
+              onDelete={onDeleteThread}
             />
           ))}
           {isCreatingThread ? (

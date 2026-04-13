@@ -75,13 +75,20 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
                 continue
 
             skills = data.get("skills", [])
+            client_session_id = data.get("sessionId")
+
+            # If client provides a session ID, seed the bridge's session map
+            if client_session_id:
+                session = manager.get_or_create(thread_id)
+                if not session.session_id:
+                    session.session_id = client_session_id
 
             # Signal that agent is thinking
             await websocket.send_json({"type": "thinking"})
 
             try:
-                response = await manager.run_message(thread_id, content, skills=skills)
-                await websocket.send_json({"type": "done", "content": response})
+                response, session_id = await manager.run_message(thread_id, content, skills=skills)
+                await websocket.send_json({"type": "done", "content": response, "sessionId": session_id})
             except Exception as e:
                 logger.exception("Error running Hermes for thread %s", thread_id)
                 await websocket.send_json({"type": "error", "message": str(e)})

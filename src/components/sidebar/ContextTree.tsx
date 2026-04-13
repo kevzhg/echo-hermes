@@ -8,6 +8,9 @@ interface ContextTreeProps {
   onToggleContextExpanded: (contextId: string) => void
   onSelectThread: (threadId: string) => void
   onCreateThread: (contextId: string, name: string) => Promise<string>
+  onRenameThread: (threadId: string, name: string) => void
+  onSetThreadSessionId: (threadId: string, sessionId?: string) => void
+  onDeleteThread: (threadId: string) => void
 }
 
 export function ContextTree({
@@ -17,6 +20,9 @@ export function ContextTree({
   onToggleContextExpanded,
   onSelectThread,
   onCreateThread,
+  onRenameThread,
+  onSetThreadSessionId,
+  onDeleteThread,
 }: ContextTreeProps) {
   if (contexts.length === 0) {
     return (
@@ -37,6 +43,9 @@ export function ContextTree({
           onToggleExpand={() => onToggleContextExpanded(context.id)}
           onSelectThread={onSelectThread}
           onCreateThread={onCreateThread}
+          onRenameThread={onRenameThread}
+          onSetThreadSessionId={onSetThreadSessionId}
+          onDeleteThread={onDeleteThread}
         />
       ))}
     </div>

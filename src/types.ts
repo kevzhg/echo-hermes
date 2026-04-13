@@ -3,6 +3,7 @@ export interface Thread {
   name: string
   contextId: string
   lastMessageAt: string
+  hermesSessionId?: string
 }
 
 export interface Context {

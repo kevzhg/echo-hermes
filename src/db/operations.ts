@@ -55,6 +55,14 @@ export async function deleteThread(threadId: string): Promise<void> {
   })
 }
 
+export async function renameThread(threadId: string, name: string): Promise<void> {
+  await db.threads.update(threadId, { name })
+}
+
+export async function setThreadSessionId(threadId: string, hermesSessionId: string | undefined): Promise<void> {
+  await db.threads.update(threadId, { hermesSessionId: hermesSessionId || undefined })
+}
+
 export async function createStreamingMessage(threadId: string): Promise<string> {
   const id = crypto.randomUUID()
   await db.messages.add({

@@ -18,6 +18,9 @@ interface SidebarProps {
   onSelectThread: (threadId: string) => void
   onCreateContext: (name: string, emoji: string) => Promise<string>
   onCreateThread: (contextId: string, name: string) => Promise<string>
+  onRenameThread: (threadId: string, name: string) => void
+  onSetThreadSessionId: (threadId: string, sessionId?: string) => void
+  onDeleteThread: (threadId: string) => void
 }
 
 export function Sidebar({
@@ -31,6 +34,9 @@ export function Sidebar({
   onSelectThread,
   onCreateContext,
   onCreateThread,
+  onRenameThread,
+  onSetThreadSessionId,
+  onDeleteThread,
 }: SidebarProps) {
   const [isCreatingContext, setIsCreatingContext] = useState(false)
   const [pendingEmoji, setPendingEmoji] = useState('📁')
@@ -60,6 +66,9 @@ export function Sidebar({
         onToggleContextExpanded={onToggleContextExpanded}
         onSelectThread={onSelectThread}
         onCreateThread={onCreateThread}
+        onRenameThread={onRenameThread}
+        onSetThreadSessionId={onSetThreadSessionId}
+        onDeleteThread={onDeleteThread}
       />
 
       <div className="mt-2 pt-2 border-t border-zinc-800">

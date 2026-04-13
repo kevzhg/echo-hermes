@@ -102,7 +102,7 @@ class SubprocessManager:
                     new_session_id,
                 )
 
-            return response
+            return response, session.session_id
 
     async def _exec(self, cmd: list[str]) -> tuple[str, str, int]:
         logger.info("EXECUTING COMMAND: %s", cmd)

@@ -5,6 +5,7 @@ import {
   createStreamingMessage,
   updateStreamingMessage,
   failStreamingMessage,
+  setThreadSessionId,
 } from '../db/operations'
 
 const BRIDGE_URL = 'ws://localhost:8000/ws'
@@ -60,6 +61,10 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
         if (msgId) {
           await updateStreamingMessage(msgId, data.content)
           currentMsgIdRef.current = null
+        }
+        // Store Hermes session ID on thread if returned
+        if (data.sessionId && threadIdRef.current) {
+          await setThreadSessionId(threadIdRef.current, data.sessionId)
         }
       } else if (data.type === 'error') {
         const msgId = currentMsgIdRef.current
@@ -125,10 +130,15 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     const msgId = await createStreamingMessage(tid)
     currentMsgIdRef.current = msgId
 
-    // Send to bridge with forced skills (active skills from ChatInput)
+    // Get thread's Hermes session ID if linked
+    const thread = await db.threads.get(tid)
+    const sessionId = thread?.hermesSessionId
+
+    // Send to bridge with session ID + forced skills
     ws.send(JSON.stringify({
       type: 'message',
       content,
+      sessionId: sessionId || undefined,
       skills: forcedSkills && forcedSkills.length > 0 ? forcedSkills : undefined,
     }))
   }, [])

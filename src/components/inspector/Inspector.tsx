@@ -31,7 +31,8 @@ export function Inspector({
 }: InspectorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Skills')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
-  const [pinnedOpen, setPinnedOpen] = useState(false)
+  const [pinnedOpen, setPinnedOpen] = useState(true)
+  const [allToolsOpen, setAllToolsOpen] = useState(true)
 
   const pinnedSkills = useMemo(
     () => skills.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name)),
@@ -128,12 +129,20 @@ export function Inspector({
               </div>
             )}
 
-            {/* Section B: All other tools — grouped by category, expanded */}
+            {/* Section B: All other tools — grouped by category, collapsible */}
             <div>
-              <div className="text-[10px] text-zinc-500 uppercase tracking-wider px-1 mb-1.5">
-                All Tools ({unpinnedSkills.length})
-              </div>
-              {unpinnedGrouped.map(([category, catSkills]) => (
+              <button
+                onClick={() => setAllToolsOpen(prev => !prev)}
+                className="w-full flex items-center gap-1.5 text-[10px] text-zinc-500 uppercase tracking-wider px-1 py-1 hover:text-zinc-400 transition-colors"
+              >
+                {allToolsOpen ? (
+                  <ChevronDown className="h-2.5 w-2.5" />
+                ) : (
+                  <ChevronRight className="h-2.5 w-2.5" />
+                )}
+                <span>All Tools ({unpinnedSkills.length})</span>
+              </button>
+              {allToolsOpen && unpinnedGrouped.map(([category, catSkills]) => (
                 <div key={category} className="mb-2">
                   <div className="text-[10px] text-zinc-600 capitalize px-1 mb-1">{category}</div>
                   <div className="flex flex-wrap gap-1.5 px-1">

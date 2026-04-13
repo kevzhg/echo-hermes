@@ -16,15 +16,20 @@ interface ContextItemProps {
   onDeleteThread: (threadId: string) => void
   onToggleThreadFavorite: (threadId: string) => void
   onReorderThreads: (contextId: string, orderedIds: string[]) => void
+  onContextDragStart: (contextId: string) => void
+  onContextDragOver: (e: React.DragEvent, contextId: string) => void
+  onContextDrop: (contextId: string) => void
 }
 
 export function ContextItem({
   context, isExpanded, activeThreadId, onToggleExpand, onSelectThread,
   onCreateThread, onRenameThread, onSetThreadSessionId, onDeleteThread,
   onToggleThreadFavorite, onReorderThreads,
+  onContextDragStart, onContextDragOver, onContextDrop,
 }: ContextItemProps) {
   const [isCreatingThread, setIsCreatingThread] = useState(false)
   const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [ctxDragOver, setCtxDragOver] = useState(false)
 
   const handleDragStart = useCallback((threadId: string) => {
     setDraggedId(threadId)
@@ -49,8 +54,14 @@ export function ContextItem({
   return (
     <div className="mb-0.5">
       <button
+        draggable
         onClick={onToggleExpand}
-        className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-xs text-zinc-300 hover:bg-zinc-800/50 transition-colors"
+        onDragStart={() => onContextDragStart(context.id)}
+        onDragOver={(e) => { e.preventDefault(); setCtxDragOver(true); onContextDragOver(e, context.id) }}
+        onDragLeave={() => setCtxDragOver(false)}
+        onDrop={() => { setCtxDragOver(false); onContextDrop(context.id) }}
+        onDragEnd={() => setCtxDragOver(false)}
+        className={`w-full flex items-center gap-1.5 px-2 py-1.5 rounded text-xs text-zinc-300 hover:bg-zinc-800/50 transition-colors ${ctxDragOver ? 'border-t border-blue-500' : ''}`}
       >
         {isExpanded ? (
           <ChevronDown className="h-3 w-3 text-zinc-600 shrink-0" />

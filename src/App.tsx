@@ -21,6 +21,7 @@ import {
   deleteThread,
   toggleThreadFavorite,
   reorderThreads,
+  reorderContexts,
 } from './db/operations'
 
 export default function App() {
@@ -84,6 +85,7 @@ export default function App() {
           onDeleteThread={(id) => deleteThread(id)}
           onToggleThreadFavorite={(id) => toggleThreadFavorite(id)}
           onReorderThreads={(ctxId, ids) => reorderThreads(ctxId, ids)}
+          onReorderContexts={(ids) => reorderContexts(ids)}
         />
       }
       main={

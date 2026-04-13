@@ -67,6 +67,14 @@ export async function setThreadSessionId(threadId: string, hermesSessionId: stri
   await db.threads.update(threadId, { hermesSessionId: hermesSessionId || undefined })
 }
 
+export async function reorderContexts(orderedIds: string[]): Promise<void> {
+  await db.transaction('rw', db.contexts, async () => {
+    for (let i = 0; i < orderedIds.length; i++) {
+      await db.contexts.update(orderedIds[i], { order: i })
+    }
+  })
+}
+
 export async function reorderThreads(_contextId: string, orderedIds: string[]): Promise<void> {
   await db.transaction('rw', db.threads, async () => {
     for (let i = 0; i < orderedIds.length; i++) {

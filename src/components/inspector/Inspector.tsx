@@ -33,6 +33,7 @@ export function Inspector({
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
   const [pinnedOpen, setPinnedOpen] = useState(true)
   const [allToolsOpen, setAllToolsOpen] = useState(true)
+  const [collapsedCats, setCollapsedCats] = useState<Set<string>>(new Set())
 
   const pinnedSkills = useMemo(
     () => skills.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name)),
@@ -142,27 +143,48 @@ export function Inspector({
                 )}
                 <span>All Tools ({unpinnedSkills.length})</span>
               </button>
-              {allToolsOpen && unpinnedGrouped.map(([category, catSkills]) => (
-                <div key={category} className="mb-2">
-                  <div className="text-[10px] text-zinc-600 capitalize px-1 mb-1">{category}</div>
-                  <div className="flex flex-wrap gap-1.5 px-1">
-                    {catSkills.map(skill => (
-                      <button
-                        key={skill.id}
-                        onClick={() => handleUnpinnedClick(skill.id)}
-                        onContextMenu={e => handleContextMenu(e, skill.id)}
-                        className="inline-flex items-center gap-1 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded px-2 py-1 text-xs hover:border-zinc-500 hover:text-zinc-300 transition-all"
-                      >
-                        {skill.favorite && <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />}
-                        {skill.name}
-                        {skill.source === 'local' && (
-                          <span className="text-[8px] text-blue-400 bg-blue-400/10 rounded px-0.5">L</span>
-                        )}
-                      </button>
-                    ))}
+              {allToolsOpen && unpinnedGrouped.map(([category, catSkills]) => {
+                const isCatCollapsed = collapsedCats.has(category)
+                return (
+                  <div key={category} className="mb-1">
+                    <button
+                      onClick={() => setCollapsedCats(prev => {
+                        const next = new Set(prev)
+                        if (next.has(category)) next.delete(category)
+                        else next.add(category)
+                        return next
+                      })}
+                      className="w-full flex items-center gap-1 text-[10px] text-zinc-600 capitalize px-1 py-0.5 hover:text-zinc-400 transition-colors"
+                    >
+                      {isCatCollapsed ? (
+                        <ChevronRight className="h-2 w-2" />
+                      ) : (
+                        <ChevronDown className="h-2 w-2" />
+                      )}
+                      {category}
+                      <span className="text-zinc-700 ml-auto">{catSkills.length}</span>
+                    </button>
+                    {!isCatCollapsed && (
+                      <div className="flex flex-wrap gap-1.5 px-1 mt-0.5">
+                        {catSkills.map(skill => (
+                          <button
+                            key={skill.id}
+                            onClick={() => handleUnpinnedClick(skill.id)}
+                            onContextMenu={e => handleContextMenu(e, skill.id)}
+                            className="inline-flex items-center gap-1 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded px-2 py-1 text-xs hover:border-zinc-500 hover:text-zinc-300 transition-all"
+                          >
+                            {skill.favorite && <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />}
+                            {skill.name}
+                            {skill.source === 'local' && (
+                              <span className="text-[8px] text-blue-400 bg-blue-400/10 rounded px-0.5">L</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}

@@ -7,8 +7,10 @@ import re
 import shutil
 import time
 from dataclasses import dataclass, field
+from typing import Awaitable, Callable
 
 from ansi import strip_ansi
+from tool_poller import poll_for_tools, snapshot_cursor
 
 logger = logging.getLogger(__name__)
 
@@ -73,29 +75,55 @@ class SubprocessManager:
             self.sessions[thread_id] = HermesSession(thread_id=thread_id)
         return self.sessions[thread_id]
 
-    async def run_message(self, thread_id: str, content: str, skills: list[str] | None = None) -> str:
+    async def run_message(
+        self,
+        thread_id: str,
+        content: str,
+        on_tool: Callable[[dict], Awaitable[None]] | None = None,
+        skills: list[str] | None = None,
+        model: str | None = None,
+    ) -> tuple[str, str | None, int]:
+        """Run one Hermes message. Returns (response, session_id, duration_ms)."""
         session = self.get_or_create(thread_id)
 
         async with session.lock:
             session.last_used = time.time()
+            t0 = time.perf_counter()
 
-            # First attempt (with --resume if session exists)
-            stdout_text, stderr_text, returncode = await self._exec(
-                self._build_command(session, content, skills=skills)
-            )
-
-            # Retry without --resume on ANY failure when session_id was set
-            # Covers: session not found, session corruption, stale session
-            if returncode != 0 and session.session_id is not None:
-                logger.info(
-                    "First attempt failed for thread %s (session %s), retrying fresh. "
-                    "Exit code: %d, stdout: %.200s, stderr: %.200s",
-                    thread_id, session.session_id, returncode, stdout_text, stderr_text,
+            # Snapshot DB cursor BEFORE subprocess so poller only sees new rows
+            cursor_start = await asyncio.to_thread(snapshot_cursor)
+            stop_event = asyncio.Event()
+            poller_task: asyncio.Task | None = None
+            if on_tool is not None:
+                poller_task = asyncio.create_task(
+                    poll_for_tools(on_tool, stop_event, cursor_start, session_filter=session.session_id)
                 )
-                session.session_id = None
+
+            try:
+                # First attempt (with --resume if session exists)
                 stdout_text, stderr_text, returncode = await self._exec(
-                    self._build_command(session, content, skills=skills)
+                    self._build_command(session, content, skills=skills, model=model)
                 )
+
+                # Retry without --resume on ANY failure when session_id was set
+                if returncode != 0 and session.session_id is not None:
+                    logger.info(
+                        "First attempt failed for thread %s (session %s), retrying fresh. "
+                        "Exit code: %d, stdout: %.200s, stderr: %.200s",
+                        thread_id, session.session_id, returncode, stdout_text, stderr_text,
+                    )
+                    session.session_id = None
+                    stdout_text, stderr_text, returncode = await self._exec(
+                        self._build_command(session, content, skills=skills, model=model)
+                    )
+            finally:
+                # Stop poller and wait for final sweep
+                stop_event.set()
+                if poller_task:
+                    try:
+                        await asyncio.wait_for(poller_task, timeout=2.0)
+                    except (asyncio.TimeoutError, asyncio.CancelledError):
+                        pass
 
             if returncode != 0:
                 # Log full raw output for debugging
@@ -134,7 +162,8 @@ class SubprocessManager:
             else:
                 logger.warning("Thread %s: no session_id parsed, current=%s", thread_id, session.session_id)
 
-            return response, session.session_id
+            duration_ms = int((time.perf_counter() - t0) * 1000)
+            return response, session.session_id, duration_ms
 
     async def _exec(self, cmd: list[str]) -> tuple[str, str, int]:
         logger.info("EXECUTING COMMAND: %s", cmd)
@@ -167,8 +196,11 @@ class SubprocessManager:
 
         return stdout_text, stderr_text, proc.returncode or 0
 
-    def _build_command(self, session: HermesSession, content: str, skills: list[str] | None = None) -> list[str]:
-        cmd = [HERMES_COMMAND, "chat", "-Q", "-q", content, "-m", "qwen/qwen3.6-plus"]
+    def _build_command(
+        self, session: HermesSession, content: str,
+        skills: list[str] | None = None, model: str | None = None,
+    ) -> list[str]:
+        cmd = [HERMES_COMMAND, "chat", "-Q", "-q", content, "-m", model or "qwen/qwen3.6-plus"]
         if session.session_id:
             cmd.extend(["--resume", session.session_id])
         if skills:

@@ -67,6 +67,29 @@ export async function setThreadSessionId(threadId: string, hermesSessionId: stri
   await db.threads.update(threadId, { hermesSessionId: hermesSessionId || undefined })
 }
 
+export async function setThreadModel(threadId: string, model: string | undefined): Promise<void> {
+  await db.threads.update(threadId, { model: model || undefined })
+}
+
+export async function recordKnownModel(name: string): Promise<void> {
+  const trimmed = name.trim()
+  if (!trimmed) return
+  const now = new Date().toISOString()
+  const existing = await db.knownModels.get(trimmed)
+  if (existing) {
+    await db.knownModels.update(trimmed, {
+      lastUsedAt: now,
+      useCount: (existing.useCount ?? 0) + 1,
+    })
+  } else {
+    await db.knownModels.add({ name: trimmed, lastUsedAt: now, useCount: 1 })
+  }
+}
+
+export async function deleteKnownModel(name: string): Promise<void> {
+  await db.knownModels.delete(name)
+}
+
 export async function renameContext(contextId: string, name: string, emoji: string): Promise<void> {
   await db.contexts.update(contextId, { name, emoji })
 }
@@ -117,8 +140,48 @@ export async function appendToStreamingMessage(messageId: string, chunk: string)
   })
 }
 
-export async function finalizeStreamingMessage(messageId: string): Promise<void> {
-  await db.messages.update(messageId, { status: 'sent' })
+export async function finalizeStreamingMessage(messageId: string, durationMs?: number): Promise<void> {
+  const patch: { status: 'sent'; durationMs?: number } = { status: 'sent' }
+  if (typeof durationMs === 'number') patch.durationMs = durationMs
+  await db.messages.update(messageId, patch)
+}
+
+export async function appendToolCall(
+  messageId: string,
+  tool: { id: string; name: string; arguments?: string; status: 'running' | 'complete' | 'error' },
+): Promise<void> {
+  await db.messages.where('id').equals(messageId).modify(m => {
+    const existing = m.toolCalls ?? []
+    // If already exists by id (e.g. duplicate event), skip
+    if (existing.some(t => t.id === tool.id)) return
+    existing.push({ ...tool, timestamp: new Date().toISOString() })
+    m.toolCalls = existing
+  })
+}
+
+export async function updateToolCall(
+  messageId: string,
+  toolId: string,
+  patch: { status?: 'running' | 'complete' | 'error'; result?: string },
+): Promise<void> {
+  await db.messages.where('id').equals(messageId).modify(m => {
+    const list = m.toolCalls ?? []
+    const idx = list.findIndex(t => t.id === toolId)
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], ...patch }
+    } else {
+      // No matching tool exists yet — happens when result row arrives before assistant tool_calls row
+      // Insert as standalone with the data we have
+      list.push({
+        id: toolId,
+        name: 'tool',
+        status: patch.status ?? 'complete',
+        result: patch.result,
+        timestamp: new Date().toISOString(),
+      })
+    }
+    m.toolCalls = list
+  })
 }
 
 export async function failStreamingMessage(messageId: string, error: string): Promise<void> {

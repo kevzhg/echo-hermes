@@ -4,6 +4,7 @@ export interface Thread {
   contextId: string
   lastMessageAt: string
   hermesSessionId?: string
+  model?: string
   order: number
   favorite: boolean
 }
@@ -17,6 +18,21 @@ export interface Context {
 
 export type ContextWithThreads = Context & { threads: Thread[] }
 
+export interface KnownModel {
+  name: string
+  lastUsedAt: string
+  useCount: number
+}
+
+export interface ToolCall {
+  id: string
+  name: string
+  arguments?: string
+  result?: string
+  status: 'running' | 'complete' | 'error'
+  timestamp: string
+}
+
 export interface Message {
   id: string
   threadId: string
@@ -24,6 +40,8 @@ export interface Message {
   content: string
   timestamp: string
   status: 'sent' | 'streaming' | 'error'
+  durationMs?: number
+  toolCalls?: ToolCall[]
   kairos?: {
     context: string
     emoji: string

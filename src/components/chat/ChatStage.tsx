@@ -3,6 +3,7 @@ import type { Context, Thread, Message, Skill } from '../../types'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { SessionInfo } from './SessionInfo'
+import { ModelSelector } from './ModelSelector'
 
 interface ChatStageProps {
   activeContext: Context | null
@@ -42,11 +43,16 @@ export function ChatStage({ activeContext, activeThread, messages, skills, onSen
         ) : (
           <div className="text-sm text-zinc-500">Select a thread</div>
         )}
-        {activeThread?.hermesSessionId && (
-          <SessionInfo
-            sessionId={activeThread.hermesSessionId}
-            threadId={activeThread.id}
-          />
+        {activeThread && (
+          <div className="flex items-center gap-3 shrink-0">
+            <ModelSelector threadId={activeThread.id} currentModel={activeThread.model} />
+            {activeThread.hermesSessionId && (
+              <SessionInfo
+                sessionId={activeThread.hermesSessionId}
+                threadId={activeThread.id}
+              />
+            )}
+          </div>
         )}
       </div>
 

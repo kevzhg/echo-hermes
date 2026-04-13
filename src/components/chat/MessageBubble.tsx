@@ -1,5 +1,6 @@
 import type { Message } from '../../types'
 import { MarkdownRenderer } from './MarkdownRenderer'
+import { ToolCallCard } from './ToolCallCard'
 
 interface MessageBubbleProps {
   message: Message
@@ -32,9 +33,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
   const isStreaming = message.status === 'streaming'
   const isEmpty = message.content.trim() === ''
+  const hasTools = message.toolCalls && message.toolCalls.length > 0
 
   return (
-    <div className="flex flex-col items-start px-4 py-1">
+    <div className="flex flex-col items-start px-4 py-1 w-full">
+      {hasTools && (
+        <div className="flex flex-col gap-1 mb-1.5 max-w-[78%] w-full">
+          {message.toolCalls!.map(t => <ToolCallCard key={t.id} tool={t} />)}
+        </div>
+      )}
       <div
         className="bg-[#18181b] text-zinc-300 text-sm px-3.5 py-2.5 max-w-[78%]"
         style={{ borderRadius: '12px 12px 12px 4px', border: bubbleBorder }}
@@ -60,6 +67,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       </div>
       <div className="flex items-center gap-1.5 mt-1.5">
         <span className="text-[11px] text-[#52525b]">{time}</span>
+        {typeof message.durationMs === 'number' && (
+          <>
+            <span className="text-[9px] text-[#3f3f46]">·</span>
+            <span className="text-[11px] text-[#52525b]">
+              {(message.durationMs / 1000).toFixed(1)}s
+            </span>
+          </>
+        )}
         {message.kairos && (
           <>
             <span className="text-[9px] text-[#3f3f46]">·</span>

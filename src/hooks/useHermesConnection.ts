@@ -8,6 +8,10 @@ import {
   finalizeStreamingMessage,
   failStreamingMessage,
   setThreadSessionId,
+  setThreadModel,
+  recordKnownModel,
+  appendToolCall,
+  updateToolCall,
 } from '../db/operations'
 
 const BRIDGE_URL = 'ws://localhost:8000/ws'
@@ -63,14 +67,30 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
         if (msgId && data.content) {
           await appendToStreamingMessage(msgId, data.content)
         }
+      } else if (data.type === 'tool') {
+        const msgId = currentMsgIdRef.current
+        if (msgId && data.id) {
+          if (data.status === 'running') {
+            await appendToolCall(msgId, {
+              id: data.id,
+              name: data.name || 'tool',
+              arguments: data.arguments,
+              status: 'running',
+            })
+          } else {
+            await updateToolCall(msgId, data.id, {
+              status: data.status,
+              result: data.result,
+            })
+          }
+        }
       } else if (data.type === 'done') {
         const msgId = currentMsgIdRef.current
         if (msgId) {
-          // If content was sent in done (non-streaming fallback), set it; otherwise just finalize
           if (typeof data.content === 'string' && data.content.length > 0) {
             await updateStreamingMessage(msgId, data.content)
           } else {
-            await finalizeStreamingMessage(msgId)
+            await finalizeStreamingMessage(msgId, data.durationMs)
           }
           currentMsgIdRef.current = null
         }
@@ -141,6 +161,17 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     const ws = wsRef.current
     if (!tid || !ws || ws.readyState !== WebSocket.OPEN) return
 
+    // Intercept "/model <name>" — set thread model, no Hermes call
+    const modelMatch = content.match(/^\/model\s+(\S+)\s*$/)
+    if (modelMatch) {
+      const newModel = modelMatch[1]
+      await setThreadModel(tid, newModel)
+      await recordKnownModel(newModel)
+      const ackId = await createStreamingMessage(tid)
+      await updateStreamingMessage(ackId, `Model switched to \`${newModel}\` for this thread.`)
+      return
+    }
+
     // Write user message to DB
     await sendMessage(tid, content)
 
@@ -148,16 +179,19 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     const msgId = await createStreamingMessage(tid)
     currentMsgIdRef.current = msgId
 
-    // Get thread's Hermes session ID if linked
+    // Get thread's Hermes session ID + model
     const thread = await db.threads.get(tid)
     const sessionId = thread?.hermesSessionId
+    const model = thread?.model
+    if (model) await recordKnownModel(model)
 
-    // Send to bridge with session ID + forced skills
+    // Send to bridge
     ws.send(JSON.stringify({
       type: 'message',
       content,
       sessionId: sessionId || undefined,
       skills: forcedSkills && forcedSkills.length > 0 ? forcedSkills : undefined,
+      model: model || undefined,
     }))
   }, [])
 

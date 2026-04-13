@@ -87,7 +87,11 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
 
             skills = data.get("skills", [])
             client_session_id = data.get("sessionId")
-            logger.info("WS MESSAGE: thread=%s, client_sessionId=%s, skills=%s", thread_id, client_session_id, skills)
+            model = data.get("model")
+            logger.info(
+                "WS MESSAGE: thread=%s, client_sessionId=%s, skills=%s, model=%s",
+                thread_id, client_session_id, skills, model,
+            )
 
             # Always sync bridge's session state with client's sessionId (DB is source of truth)
             # If client sends a value, use it. If client sends None/empty, clear it (start new session).
@@ -99,18 +103,29 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
             await websocket.send_json({"type": "thinking"})
 
             try:
-                response, session_id = await manager.run_message(thread_id, content, skills=skills)
-                logger.info("Streaming response: thread=%s, sessionId=%s, response_len=%d", thread_id, session_id, len(response))
+                async def on_tool(event: dict):
+                    await websocket.send_json(event)
 
-                # Fake-stream: split response into chunks and send with small delay.
-                # Hermes -Q flushes full output at end, so real streaming from subprocess isn't possible.
-                # Split preserving whitespace so markdown/code blocks reconstruct correctly.
+                response, session_id, duration_ms = await manager.run_message(
+                    thread_id, content,
+                    on_tool=on_tool, skills=skills, model=model,
+                )
+                logger.info(
+                    "Streaming response: thread=%s sessionId=%s response_len=%d duration_ms=%d",
+                    thread_id, session_id, len(response), duration_ms,
+                )
+
+                # Fake-stream response text (Hermes -Q buffers full response at end)
                 chunks = re.findall(r"\S+\s*|\s+", response)
                 for chunk in chunks:
                     await websocket.send_json({"type": "chunk", "content": chunk})
                     await asyncio.sleep(0.015)
 
-                await websocket.send_json({"type": "done", "sessionId": session_id})
+                await websocket.send_json({
+                    "type": "done",
+                    "sessionId": session_id,
+                    "durationMs": duration_ms,
+                })
             except Exception as e:
                 logger.exception("Error running Hermes for thread %s", thread_id)
                 await websocket.send_json({"type": "error", "message": str(e)})

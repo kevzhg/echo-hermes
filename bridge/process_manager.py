@@ -145,23 +145,18 @@ class SubprocessManager:
 
     @staticmethod
     def _parse_output(output: str) -> tuple[str, str | None]:
-        separator = "\nsession_id: "
-        if separator in output:
-            parts = output.rsplit(separator, 1)
-            response = parts[0].strip()
-            session_id = parts[1].strip()
-            return response, session_id
-
-        # Try line-by-line for edge cases
+        # Search lines from bottom for session_id
         lines = output.strip().split("\n")
         for i in range(len(lines) - 1, -1, -1):
-            if lines[i].startswith("session_id: "):
-                session_id = lines[i].replace("session_id: ", "").strip()
+            line = lines[i].strip()
+            if line.startswith("session_id:"):
+                session_id = line.replace("session_id:", "").strip()
                 response = "\n".join(lines[:i]).strip()
+                logger.info("Parsed session_id: %s", session_id)
                 return response, session_id
 
         # No session_id found — return full output as response
-        logger.warning("No session_id found in Hermes output")
+        logger.warning("No session_id found in Hermes output. Last 3 lines: %s", lines[-3:])
         return output, None
 
     async def _cleanup_loop(self) -> None:

@@ -11,4 +11,6 @@ def strip_ansi(text: str) -> str:
     text = _ANSI_CSI.sub('', text)
     text = _ANSI_OSC.sub('', text)
     text = _ANSI_MISC.sub('', text)
+    # Strip carriage returns (Hermes outputs \r\n on some lines)
+    text = text.replace('\r', '')
     return text

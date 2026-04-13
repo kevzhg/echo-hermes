@@ -34,6 +34,8 @@ export interface Skill {
   category: string
   source: string
   pinned: boolean
+  active: boolean
+  favorite: boolean
 }
 
 export interface SkillCategory {

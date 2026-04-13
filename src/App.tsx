@@ -9,7 +9,14 @@ import { useWorkspace } from './hooks/useWorkspace'
 import { useHermesConnection } from './hooks/useHermesConnection'
 import { db, initDb } from './db/index'
 import type { Message } from './types'
-import { toggleSkillPin, syncSkillsFromBridge } from './db/operations'
+import {
+  toggleSkillPin,
+  toggleSkillActive,
+  toggleSkillFavorite,
+  cloneSkill,
+  deleteSkill,
+  syncSkillsFromBridge,
+} from './db/operations'
 
 export default function App() {
   useEffect(() => { initDb().then(() => syncSkillsFromBridge()) }, [])
@@ -41,9 +48,11 @@ export default function App() {
     [activeThreadId]
   ) ?? []
 
-  const handleTogglePin = useCallback((skillId: string) => {
-    toggleSkillPin(skillId)
-  }, [])
+  const handleTogglePin = useCallback((skillId: string) => { toggleSkillPin(skillId) }, [])
+  const handleToggleActive = useCallback((skillId: string) => { toggleSkillActive(skillId) }, [])
+  const handleToggleFavorite = useCallback((skillId: string) => { toggleSkillFavorite(skillId) }, [])
+  const handleCloneSkill = useCallback((skillId: string) => { cloneSkill(skillId) }, [])
+  const handleDeleteSkill = useCallback((skillId: string) => { deleteSkill(skillId) }, [])
 
   return (
     <AppShell
@@ -78,6 +87,10 @@ export default function App() {
         <Inspector
           skills={skills}
           onTogglePin={handleTogglePin}
+          onToggleActive={handleToggleActive}
+          onToggleFavorite={handleToggleFavorite}
+          onCloneSkill={handleCloneSkill}
+          onDeleteSkill={handleDeleteSkill}
         />
       }
     />

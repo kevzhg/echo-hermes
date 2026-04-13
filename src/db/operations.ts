@@ -99,13 +99,15 @@ export async function syncSkillsFromBridge(): Promise<void> {
               source: s.source,
             })
           } else {
-            // New skill — default unpinned
+            // New skill — default unpinned/inactive/unfavorited
             await db.skills.add({
               id: crypto.randomUUID(),
               name: s.name,
               category: cat.category,
               source: s.source,
               pinned: false,
+              active: false,
+              favorite: false,
             })
           }
         }
@@ -128,4 +130,37 @@ export async function toggleSkillPin(skillId: string): Promise<void> {
   if (skill) {
     await db.skills.update(skillId, { pinned: !skill.pinned })
   }
+}
+
+export async function toggleSkillActive(skillId: string): Promise<void> {
+  const skill = await db.skills.get(skillId)
+  if (skill) {
+    await db.skills.update(skillId, { active: !skill.active })
+  }
+}
+
+export async function toggleSkillFavorite(skillId: string): Promise<void> {
+  const skill = await db.skills.get(skillId)
+  if (skill) {
+    await db.skills.update(skillId, { favorite: !skill.favorite })
+  }
+}
+
+export async function cloneSkill(skillId: string): Promise<void> {
+  const skill = await db.skills.get(skillId)
+  if (skill) {
+    await db.skills.add({
+      id: crypto.randomUUID(),
+      name: `${skill.name} (Copy)`,
+      category: skill.category,
+      source: 'local',
+      pinned: false,
+      active: false,
+      favorite: false,
+    })
+  }
+}
+
+export async function deleteSkill(skillId: string): Promise<void> {
+  await db.skills.delete(skillId)
 }

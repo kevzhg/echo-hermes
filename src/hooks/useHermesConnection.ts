@@ -125,10 +125,10 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     const msgId = await createStreamingMessage(tid)
     currentMsgIdRef.current = msgId
 
-    // Merge pinned skills + one-shot skills (deduplicated)
-    const pinned = await db.skills.filter(s => s.pinned).toArray()
-    const pinnedNames = pinned.map(s => s.name)
-    const allSkills = [...new Set([...pinnedNames, ...(oneshotSkills ?? [])])]
+    // Merge active + pinned skills + one-shot skills (deduplicated)
+    const forcedSkills = await db.skills.filter(s => s.active || s.pinned).toArray()
+    const forcedNames = forcedSkills.map(s => s.name)
+    const allSkills = [...new Set([...forcedNames, ...(oneshotSkills ?? [])])]
 
     // Send to bridge
     ws.send(JSON.stringify({

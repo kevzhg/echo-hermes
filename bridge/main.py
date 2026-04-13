@@ -88,6 +88,7 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
 
             try:
                 response, session_id = await manager.run_message(thread_id, content, skills=skills)
+                logger.info("Sending done: thread=%s, sessionId=%s, response_len=%d", thread_id, session_id, len(response))
                 await websocket.send_json({"type": "done", "content": response, "sessionId": session_id})
             except Exception as e:
                 logger.exception("Error running Hermes for thread %s", thread_id)

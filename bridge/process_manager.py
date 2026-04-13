@@ -91,8 +91,10 @@ class SubprocessManager:
                 )
 
             clean_output = strip_ansi(stdout_text).strip()
+            logger.info("CLEAN OUTPUT (last 200 chars): %s", repr(clean_output[-200:]))
 
             response, new_session_id = self._parse_output(clean_output)
+            logger.info("PARSED: response_len=%d, session_id=%s", len(response), new_session_id)
 
             if new_session_id:
                 session.session_id = new_session_id
@@ -101,6 +103,8 @@ class SubprocessManager:
                     thread_id,
                     new_session_id,
                 )
+            else:
+                logger.warning("Thread %s: no session_id parsed, current=%s", thread_id, session.session_id)
 
             return response, session.session_id
 

@@ -64,7 +64,10 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
         }
         // Store Hermes session ID on thread if returned
         if (data.sessionId && threadIdRef.current) {
+          console.log('[Echo] Storing sessionId on thread:', threadIdRef.current, '→', data.sessionId)
           await setThreadSessionId(threadIdRef.current, data.sessionId)
+        } else {
+          console.log('[Echo] No sessionId in done response:', { sessionId: data.sessionId, threadId: threadIdRef.current })
         }
       } else if (data.type === 'error') {
         const msgId = currentMsgIdRef.current

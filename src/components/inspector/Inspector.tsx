@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { ChevronDown, ChevronRight, Star, Zap } from 'lucide-react'
+import { ChevronDown, ChevronRight, Search, Star, Zap } from 'lucide-react'
 import type { Skill } from '../../types'
 import { SkillContextMenu } from './SkillContextMenu'
 
@@ -34,6 +34,7 @@ export function Inspector({
   const [pinnedOpen, setPinnedOpen] = useState(true)
   const [allToolsOpen, setAllToolsOpen] = useState(true)
   const [collapsedCats, setCollapsedCats] = useState<Set<string>>(new Set())
+  const [skillSearch, setSkillSearch] = useState('')
 
   const pinnedSkills = useMemo(
     () => skills.filter(s => s.active).sort((a, b) => a.name.localeCompare(b.name)),
@@ -48,14 +49,18 @@ export function Inspector({
   )
 
   const unpinnedGrouped = useMemo(() => {
+    const q = skillSearch.toLowerCase().trim()
+    const filtered = q
+      ? unpinnedSkills.filter(s => s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q))
+      : unpinnedSkills
     const map = new Map<string, Skill[]>()
-    for (const s of unpinnedSkills) {
+    for (const s of filtered) {
       const cat = s.category || 'Uncategorized'
       if (!map.has(cat)) map.set(cat, [])
       map.get(cat)!.push(s)
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-  }, [unpinnedSkills])
+  }, [unpinnedSkills, skillSearch])
 
   const handleContextMenu = useCallback((e: React.MouseEvent, skillId: string) => {
     e.preventDefault()
@@ -143,6 +148,18 @@ export function Inspector({
                 )}
                 <span>All Skills ({unpinnedSkills.length})</span>
               </button>
+              {allToolsOpen && (
+                <div className="relative px-1 mb-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-zinc-600" />
+                  <input
+                    type="text"
+                    value={skillSearch}
+                    onChange={e => setSkillSearch(e.target.value)}
+                    placeholder="Search skills..."
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-300 placeholder-zinc-500 pl-7 pr-2 py-1.5 outline-none focus:border-zinc-600 transition-colors"
+                  />
+                </div>
+              )}
               {allToolsOpen && unpinnedGrouped.map(([category, catSkills]) => {
                 const isCatCollapsed = collapsedCats.has(category)
                 return (

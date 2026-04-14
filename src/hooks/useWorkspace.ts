@@ -24,15 +24,31 @@ export function useWorkspace(): WorkspaceState {
   const rawContexts = useLiveQuery(() => db.contexts.orderBy('order').toArray()) ?? []
   const allThreads = useLiveQuery(() => db.threads.toArray()) ?? []
 
-  // Start with all contexts expanded — populate once contexts load
-  const [expandedContextIds, setExpandedContextIds] = useState<Set<string>>(new Set())
+  // Restore expand/collapse + active thread from localStorage
+  const [expandedContextIds, setExpandedContextIds] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('echo-expanded-contexts')
+      if (saved) return new Set(JSON.parse(saved))
+    } catch { /* ignore */ }
+    return new Set()
+  })
   const [initializedExpand, setInitializedExpand] = useState(false)
 
+  // First load: if no saved state, expand all contexts
   if (!initializedExpand && rawContexts.length > 0) {
-    setExpandedContextIds(new Set(rawContexts.map(c => c.id)))
+    if (expandedContextIds.size === 0) {
+      const all = new Set(rawContexts.map(c => c.id))
+      setExpandedContextIds(all)
+      try { localStorage.setItem('echo-expanded-contexts', JSON.stringify([...all])) } catch { /* */ }
+    }
     setInitializedExpand(true)
   }
-  const [activeThreadId, setActiveThreadId] = useState<string | null>('thr-okr')
+
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('echo-active-thread') || null
+    } catch { return null }
+  })
   const [filterQuery, setFilterQuery] = useState('')
 
   const toggleContextExpanded = useCallback((contextId: string) => {
@@ -43,12 +59,14 @@ export function useWorkspace(): WorkspaceState {
       } else {
         next.add(contextId)
       }
+      try { localStorage.setItem('echo-expanded-contexts', JSON.stringify([...next])) } catch { /* */ }
       return next
     })
   }, [])
 
   const setActiveThread = useCallback((threadId: string) => {
     setActiveThreadId(threadId)
+    try { localStorage.setItem('echo-active-thread', threadId) } catch { /* */ }
     const parentThread = allThreads.find(t => t.id === threadId)
     if (parentThread) {
       setExpandedContextIds(prev => {

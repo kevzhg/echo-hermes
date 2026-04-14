@@ -33,7 +33,19 @@ def get_session_info(session_id: str) -> dict | None:
             row = cur.fetchone()
             if not row:
                 return None
-            return dict(row)
+            result = dict(row)
+
+            # Estimate current context size from message content length.
+            # DB input_tokens is cumulative across ALL API calls (inflated).
+            # Better: sum all message content chars / 4 ≈ actual context tokens.
+            cur.execute(
+                "SELECT COALESCE(SUM(LENGTH(content)), 0) FROM messages WHERE session_id = ?",
+                (session_id,),
+            )
+            total_chars = cur.fetchone()[0] or 0
+            result["estimated_context_tokens"] = total_chars // 4
+
+            return result
         finally:
             conn.close()
     except sqlite3.Error as e:

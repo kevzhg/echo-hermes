@@ -62,7 +62,9 @@ export function SessionInfo({ sessionId, threadId }: SessionInfoProps) {
 
   if (!sessionId || !data?.found) return null
 
-  const totalTokens = (data.input_tokens ?? 0) + (data.output_tokens ?? 0)
+  // Use estimated context tokens (content-length based) instead of cumulative API tokens
+  const totalTokens = (data as Record<string, unknown>).estimated_context_tokens as number
+    ?? (data.input_tokens ?? 0)
   const contextWindow = CONTEXT_WINDOWS[data.model ?? ''] ?? DEFAULT_CONTEXT_WINDOW
   const pct = Math.min(100, Math.round((totalTokens / contextWindow) * 100))
 

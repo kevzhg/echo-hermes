@@ -4,6 +4,7 @@ import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { SessionInfo } from './SessionInfo'
 import { ModelSelector } from './ModelSelector'
+import { ReminderBanner } from './ReminderBanner'
 
 interface ChatStageProps {
   activeContext: Context | null
@@ -64,6 +65,9 @@ export function ChatStage({ activeContext, activeThread, messages, skills, onSen
           </div>
         )}
       </div>
+
+      {/* Reminder banner */}
+      {activeThread && <ReminderBanner threadId={activeThread.id} />}
 
       {/* Message area */}
       <div className="flex-1 min-h-0">

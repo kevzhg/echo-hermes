@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from process_manager import SubprocessManager
 from skills import discover_skills
-from sessions import get_session_info
+from sessions import get_session_info, get_session_messages
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -59,6 +59,11 @@ async def get_session(session_id: str):
     if not info:
         return {"found": False}
     return {"found": True, **info}
+
+
+@app.get("/api/sessions/{session_id}/messages")
+async def get_session_msgs(session_id: str):
+    return await asyncio.to_thread(get_session_messages, session_id)
 
 
 @app.websocket("/ws/{thread_id}")

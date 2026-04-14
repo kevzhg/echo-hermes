@@ -109,6 +109,34 @@ def _row_to_events(row: dict) -> list[dict]:
     return events
 
 
+def _row_to_mind_event(row: dict) -> dict:
+    """Convert any DB row into a mind-timeline event for the frontend."""
+    role = row.get("role", "")
+    content = (row.get("content") or "")[:2000]
+    event: dict = {
+        "type": "mind",
+        "dbId": row["id"],
+        "role": role,
+        "content": content,
+        "timestamp": row.get("timestamp"),
+    }
+    if row.get("tool_name"):
+        event["toolName"] = row["tool_name"]
+    if row.get("tool_calls"):
+        try:
+            tc = json.loads(row["tool_calls"])
+            if isinstance(tc, list):
+                event["toolCalls"] = [
+                    {"name": (t.get("function") or {}).get("name") or "unknown"}
+                    for t in tc
+                ]
+        except Exception:
+            pass
+    if row.get("reasoning"):
+        event["reasoning"] = (row["reasoning"] or "")[:1000]
+    return event
+
+
 async def poll_for_tools(
     on_tool: Callable[[dict], Awaitable[None]],
     stop_event: asyncio.Event,
@@ -136,8 +164,9 @@ async def poll_for_tools(
             cursor = max(cursor, int(row["id"]))
             if session_filter and row.get("session_id") != session_filter:
                 continue
+
+            # Emit tool events (for chat tool cards)
             for ev in _row_to_events(row):
-                # Dedupe — running event before complete
                 key = f"{ev['id']}:{ev['status']}"
                 if key in seen_call_ids:
                     continue
@@ -147,12 +176,21 @@ async def poll_for_tools(
                 except Exception as e:
                     logger.warning("on_tool callback raised: %s", e)
 
+            # Emit mind event (for Mind tab timeline — ALL rows)
+            mind_key = f"mind_{row['id']}"
+            if mind_key not in seen_call_ids:
+                seen_call_ids.add(mind_key)
+                try:
+                    await on_tool(_row_to_mind_event(row))
+                except Exception as e:
+                    logger.warning("mind event callback raised: %s", e)
+
         try:
             await asyncio.wait_for(stop_event.wait(), timeout=POLL_INTERVAL_MS / 1000)
         except asyncio.TimeoutError:
             pass
 
-    # Final sweep after subprocess exits — catch anything written between last poll and exit
+    # Final sweep
     try:
         rows = await asyncio.to_thread(_fetch_new_rows, cursor)
         for row in rows:
@@ -160,10 +198,13 @@ async def poll_for_tools(
                 continue
             for ev in _row_to_events(row):
                 key = f"{ev['id']}:{ev['status']}"
-                if key in seen_call_ids:
-                    continue
-                seen_call_ids.add(key)
-                await on_tool(ev)
+                if key not in seen_call_ids:
+                    seen_call_ids.add(key)
+                    await on_tool(ev)
+            mind_key = f"mind_{row['id']}"
+            if mind_key not in seen_call_ids:
+                seen_call_ids.add(mind_key)
+                await on_tool(_row_to_mind_event(row))
     except Exception:
         pass
 

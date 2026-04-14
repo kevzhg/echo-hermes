@@ -49,7 +49,7 @@ export default function App() {
     createThread,
   } = useWorkspace()
 
-  const { sendMessage: hermesSend } = useHermesConnection(activeThreadId)
+  const { sendMessage: hermesSend, mindEvents } = useHermesConnection(activeThreadId)
 
   const skills = useLiveQuery(() => db.skills.toArray()) ?? []
 
@@ -120,6 +120,8 @@ export default function App() {
           onCloneSkill={handleCloneSkill}
           onDeleteSkill={handleDeleteSkill}
           onInjectSkillName={(name) => setPendingText(name)}
+          mindEvents={mindEvents}
+          sessionId={activeThread?.hermesSessionId}
         />
       }
     />

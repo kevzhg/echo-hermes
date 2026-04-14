@@ -1,7 +1,9 @@
 import { useState, useMemo, useCallback } from 'react'
 import { ChevronDown, ChevronRight, RefreshCw, Search, Star, X, Zap } from 'lucide-react'
 import type { Skill } from '../../types'
+import type { MindEvent } from '../../hooks/useHermesConnection'
 import { SkillContextMenu } from './SkillContextMenu'
+import { MindTimeline } from './MindTimeline'
 import { syncSkillsFromBridge } from '../../db/operations'
 
 const tabs = ['Skills', 'Files', 'Mind'] as const
@@ -21,6 +23,8 @@ interface InspectorProps {
   onCloneSkill: (skillId: string) => void
   onDeleteSkill: (skillId: string) => void
   onInjectSkillName?: (skillName: string) => void
+  mindEvents: MindEvent[]
+  sessionId?: string
 }
 
 export function Inspector({
@@ -31,6 +35,8 @@ export function Inspector({
   onCloneSkill,
   onDeleteSkill,
   onInjectSkillName,
+  mindEvents,
+  sessionId,
 }: InspectorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Skills')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
@@ -253,9 +259,7 @@ export function Inspector({
         )}
 
         {activeTab === 'Mind' && (
-          <div className="flex-1 flex items-center justify-center text-xs text-zinc-600 py-12">
-            Reasoning steps will appear here
-          </div>
+          <MindTimeline events={mindEvents} sessionId={sessionId} />
         )}
       </div>
 

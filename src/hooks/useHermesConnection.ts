@@ -18,13 +18,25 @@ const BRIDGE_URL = 'ws://localhost:8000/ws'
 const RECONNECT_BASE = 1000
 const RECONNECT_MAX = 16000
 
+export interface MindEvent {
+  dbId: number
+  role: string
+  content: string
+  timestamp: number
+  toolName?: string
+  toolCalls?: { name: string }[]
+  reasoning?: string
+}
+
 interface HermesConnection {
   sendMessage: (content: string) => void
   isConnected: boolean
+  mindEvents: MindEvent[]
 }
 
 export function useHermesConnection(threadId: string | null): HermesConnection {
   const [isConnected, setIsConnected] = useState(false)
+  const [mindEvents, setMindEvents] = useState<MindEvent[]>([])
   const wsRef = useRef<WebSocket | null>(null)
   const currentMsgIdRef = useRef<string | null>(null)
   const reconnectDelayRef = useRef(RECONNECT_BASE)
@@ -84,6 +96,11 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
             })
           }
         }
+      } else if (data.type === 'mind') {
+        setMindEvents(prev => {
+          if (prev.some(e => e.dbId === data.dbId)) return prev
+          return [...prev, data as MindEvent]
+        })
       } else if (data.type === 'done') {
         const msgId = currentMsgIdRef.current
         if (msgId) {
@@ -197,5 +214,5 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     ws.send(JSON.stringify(payload))
   }, [])
 
-  return { sendMessage: send, isConnected }
+  return { sendMessage: send, isConnected, mindEvents }
 }

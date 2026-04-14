@@ -1,18 +1,63 @@
 import { useState, useCallback } from 'react'
 
-interface PanelCollapseState {
+const STORAGE_KEY = 'echo-panel-state'
+
+interface PanelState {
   sidebarCollapsed: boolean
   inspectorCollapsed: boolean
-  toggleSidebar: () => void
-  toggleInspector: () => void
+  sidebarWidth: number
+  inspectorWidth: number
 }
 
-export function usePanelCollapse(): PanelCollapseState {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [inspectorCollapsed, setInspectorCollapsed] = useState(false)
+function loadState(): PanelState {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch { /* ignore */ }
+  return { sidebarCollapsed: false, inspectorCollapsed: false, sidebarWidth: 260, inspectorWidth: 280 }
+}
 
-  const toggleSidebar = useCallback(() => setSidebarCollapsed(prev => !prev), [])
-  const toggleInspector = useCallback(() => setInspectorCollapsed(prev => !prev), [])
+function saveState(state: PanelState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  } catch { /* ignore */ }
+}
 
-  return { sidebarCollapsed, inspectorCollapsed, toggleSidebar, toggleInspector }
+export function usePanelCollapse() {
+  const [state, setState] = useState<PanelState>(loadState)
+
+  const update = useCallback((patch: Partial<PanelState>) => {
+    setState(prev => {
+      const next = { ...prev, ...patch }
+      saveState(next)
+      return next
+    })
+  }, [])
+
+  const toggleSidebar = useCallback(() => {
+    update({ sidebarCollapsed: !state.sidebarCollapsed })
+  }, [state.sidebarCollapsed, update])
+
+  const toggleInspector = useCallback(() => {
+    update({ inspectorCollapsed: !state.inspectorCollapsed })
+  }, [state.inspectorCollapsed, update])
+
+  const setSidebarWidth = useCallback((w: number) => {
+    update({ sidebarWidth: Math.max(180, Math.min(500, w)) })
+  }, [update])
+
+  const setInspectorWidth = useCallback((w: number) => {
+    update({ inspectorWidth: Math.max(200, Math.min(500, w)) })
+  }, [update])
+
+  return {
+    sidebarCollapsed: state.sidebarCollapsed,
+    inspectorCollapsed: state.inspectorCollapsed,
+    sidebarWidth: state.sidebarWidth,
+    inspectorWidth: state.inspectorWidth,
+    toggleSidebar,
+    toggleInspector,
+    setSidebarWidth,
+    setInspectorWidth,
+  }
 }

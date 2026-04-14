@@ -34,8 +34,12 @@ export default function App() {
     return () => clearInterval(retry)
   }, [])
 
-  const { sidebarCollapsed, inspectorCollapsed, toggleSidebar, toggleInspector } =
-    usePanelCollapse()
+  const {
+    sidebarCollapsed, inspectorCollapsed,
+    sidebarWidth, inspectorWidth,
+    toggleSidebar, toggleInspector,
+    setSidebarWidth, setInspectorWidth,
+  } = usePanelCollapse()
   const {
     expandedContextIds,
     activeThreadId,
@@ -73,8 +77,12 @@ export default function App() {
     <AppShell
       sidebarCollapsed={sidebarCollapsed}
       inspectorCollapsed={inspectorCollapsed}
+      sidebarWidth={sidebarWidth}
+      inspectorWidth={inspectorWidth}
       onToggleSidebar={toggleSidebar}
       onToggleInspector={toggleInspector}
+      onSidebarResize={setSidebarWidth}
+      onInspectorResize={setInspectorWidth}
       sidebar={
         <Sidebar
           agentStatus="online"

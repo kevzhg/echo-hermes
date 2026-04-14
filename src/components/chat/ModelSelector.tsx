@@ -37,9 +37,9 @@ export function ModelSelector({ threadId, currentModel }: ModelSelectorProps) {
     setOpen(false)
   }
 
-  const display = currentModel
-    ? currentModel.split('/').pop() ?? currentModel
-    : 'default'
+  const DEFAULT_MODEL = 'qwen/qwen3.6-plus'
+  const activeModel = currentModel || DEFAULT_MODEL
+  const display = activeModel.split('/').pop() ?? activeModel
 
   return (
     <div ref={ref} className="relative">

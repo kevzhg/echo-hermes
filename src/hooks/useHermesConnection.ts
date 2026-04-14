@@ -186,13 +186,15 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     if (model) await recordKnownModel(model)
 
     // Send to bridge
-    ws.send(JSON.stringify({
+    const payload = {
       type: 'message',
       content,
       sessionId: sessionId || undefined,
       skills: forcedSkills && forcedSkills.length > 0 ? forcedSkills : undefined,
       model: model || undefined,
-    }))
+    }
+    console.log('[Echo] WS send:', { model: payload.model, sessionId: payload.sessionId })
+    ws.send(JSON.stringify(payload))
   }, [])
 
   return { sendMessage: send, isConnected }

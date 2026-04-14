@@ -74,10 +74,10 @@ export function Inspector({
     onInjectSkillName?.(skillName)
   }, [onInjectSkillName])
 
-  const handleUnpinnedClick = useCallback((skillId: string) => {
-    // Left-click unpinned → pin it (move to pinned tray)
-    onTogglePin(skillId)
-  }, [onTogglePin])
+  const handleUnpinnedClick = useCallback((skill: { id: string; name: string }) => {
+    // Left-click any skill → type skill name into chat
+    onInjectSkillName?.(skill.name)
+  }, [onInjectSkillName])
 
   const handleActivateSkill = useCallback((skillId: string) => {
     // Toggle active state (persistent purple pill in chat)
@@ -211,7 +211,7 @@ export function Inspector({
                         {catSkills.map(skill => (
                           <button
                             key={skill.id}
-                            onClick={() => handleUnpinnedClick(skill.id)}
+                            onClick={() => handleUnpinnedClick(skill)}
                             onContextMenu={e => handleContextMenu(e, skill.id)}
                             className="inline-flex items-center gap-1 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded px-2 py-1 text-xs hover:border-zinc-500 hover:text-zinc-300 transition-all"
                           >

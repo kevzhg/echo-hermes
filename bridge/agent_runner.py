@@ -29,7 +29,8 @@ except ImportError as e:
     HERMES_AVAILABLE = False
     logger.error("Failed to import Hermes: %s. Bridge will not function.", e)
 
-DB_PATH = os.path.expanduser("~/.hermes/state.db")
+from pathlib import Path
+DB_PATH = Path(os.path.expanduser("~/.hermes/state.db"))
 DEFAULT_MODEL = "qwen/qwen3.5-flash-02-23"
 SESSION_TIMEOUT = int(os.getenv("PROCESS_TIMEOUT", "3600"))
 

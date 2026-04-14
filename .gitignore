@@ -41,3 +41,4 @@ docs/workplace
 
 # Bridge env
 bridge/.env
+bridge/.venv

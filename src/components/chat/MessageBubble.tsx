@@ -1,6 +1,7 @@
 import type { Message } from '../../types'
 import { MarkdownRenderer } from './MarkdownRenderer'
 import { ToolCallCard } from './ToolCallCard'
+import { ThinkingIndicator } from './ThinkingIndicator'
 
 interface MessageBubbleProps {
   message: Message
@@ -47,14 +48,16 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         style={{ borderRadius: '12px 12px 12px 4px', border: bubbleBorder }}
       >
         {isStreaming && isEmpty ? (
-          <span className="inline-flex items-center gap-1.5">
-            {[0, 0.2, 0.4].map((delay, i) => (
-              <span
-                key={i}
-                className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] animate-pulse"
-                style={{ animationDelay: `${delay}s`, animationDuration: '1.4s' }}
-              />
-            ))}
+          <span className="inline-flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5">
+              {[0, 0.2, 0.4].map((delay, i) => (
+                <span
+                  key={i}
+                  className="w-1.5 h-1.5 rounded-full bg-[#f59e0b] animate-pulse"
+                  style={{ animationDelay: `${delay}s`, animationDuration: '1.4s' }}
+                />
+              ))}
+            </span>
           </span>
         ) : isStreaming ? (
           <span className="whitespace-pre-wrap">
@@ -65,6 +68,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           <MarkdownRenderer content={message.content} />
         )}
       </div>
+      {isStreaming && <ThinkingIndicator />}
+      {!isStreaming && (
       <div className="flex items-center gap-1.5 mt-1.5">
         <span className="text-[11px] text-[#52525b]">{time}</span>
         {typeof message.durationMs === 'number' && (
@@ -96,6 +101,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </>
         )}
       </div>
+      )}
     </div>
   )
 }

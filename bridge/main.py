@@ -1,34 +1,37 @@
-"""Echo-Hermes Bridge — FastAPI WebSocket server connecting Echo frontend to Hermes CLI."""
+"""Echo-Hermes Bridge — FastAPI WebSocket server with in-process Hermes Python API."""
 
 import asyncio
 import json
 import logging
+import os
 import re
+import tempfile
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from process_manager import SubprocessManager
+from agent_runner import AgentRunner
 from skills import discover_skills
-from sessions import get_session_info
+from sessions import get_session_info, get_session_messages
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-manager = SubprocessManager()
+runner = AgentRunner()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await manager.start()
-    logger.info("Bridge started")
+    await runner.start()
+    logger.info("Bridge started (Python API mode)")
     yield
-    await manager.stop()
+    await runner.stop()
     logger.info("Bridge stopped")
 
 
@@ -36,16 +39,33 @@ app = FastAPI(title="Echo-Hermes Bridge", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://localhost:5173", "http://localhost:5174",
+        "http://127.0.0.1:5173", "http://127.0.0.1:5174",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+UPLOAD_DIR = tempfile.mkdtemp(prefix="echo_uploads_")
+logger.info("Upload directory: %s", UPLOAD_DIR)
+
 
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.post("/api/upload")
+async def upload_image(file: UploadFile = File(...)):
+    ext = os.path.splitext(file.filename or "image.png")[1] or ".png"
+    path = os.path.join(UPLOAD_DIR, f"{os.urandom(8).hex()}{ext}")
+    content = await file.read()
+    with open(path, "wb") as f:
+        f.write(content)
+    logger.info("Image uploaded: %s (%d bytes)", path, len(content))
+    return JSONResponse({"path": path, "size": len(content)})
 
 
 @app.get("/api/skills")
@@ -59,6 +79,11 @@ async def get_session(session_id: str):
     if not info:
         return {"found": False}
     return {"found": True, **info}
+
+
+@app.get("/api/sessions/{session_id}/messages")
+async def get_session_msgs(session_id: str):
+    return await asyncio.to_thread(get_session_messages, session_id)
 
 
 @app.websocket("/ws/{thread_id}")
@@ -81,38 +106,57 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
                 continue
 
             content = data.get("content", "").strip()
-            if not content:
+            if not content and not data.get("imagePath"):
                 await websocket.send_json({"type": "error", "message": "Empty message"})
                 continue
 
             skills = data.get("skills", [])
             client_session_id = data.get("sessionId")
-            logger.info("WS MESSAGE: thread=%s, client_sessionId=%s, skills=%s", thread_id, client_session_id, skills)
+            model = data.get("model")
+            image_path = data.get("imagePath")
 
-            # Always sync bridge's session state with client's sessionId (DB is source of truth)
-            # If client sends a value, use it. If client sends None/empty, clear it (start new session).
-            session = manager.get_or_create(thread_id)
+            logger.info(
+                "WS MESSAGE: thread=%s sessionId=%s model=%s skills=%s image=%s",
+                thread_id, client_session_id, model, skills, bool(image_path),
+            )
+
+            # Sync session state from client
+            session = runner.get_or_create(thread_id)
             session.session_id = client_session_id if client_session_id else None
-            logger.info("Session state for thread %s: session_id=%s", thread_id, session.session_id)
 
-            # Signal that agent is thinking
+            # Signal thinking
             await websocket.send_json({"type": "thinking"})
 
             try:
-                response, session_id = await manager.run_message(thread_id, content, skills=skills)
-                logger.info("Streaming response: thread=%s, sessionId=%s, response_len=%d", thread_id, session_id, len(response))
+                async def on_chunk(delta: str):
+                    await websocket.send_json({"type": "chunk", "content": delta})
 
-                # Fake-stream: split response into chunks and send with small delay.
-                # Hermes -Q flushes full output at end, so real streaming from subprocess isn't possible.
-                # Split preserving whitespace so markdown/code blocks reconstruct correctly.
-                chunks = re.findall(r"\S+\s*|\s+", response)
-                for chunk in chunks:
-                    await websocket.send_json({"type": "chunk", "content": chunk})
-                    await asyncio.sleep(0.015)
+                async def on_tool(event: dict):
+                    await websocket.send_json(event)
 
-                await websocket.send_json({"type": "done", "sessionId": session_id})
+                response, session_id, duration_ms = await runner.run_message(
+                    thread_id,
+                    content or "describe this image",
+                    on_chunk=on_chunk,
+                    on_tool=on_tool,
+                    skills=skills,
+                    model=model,
+                    image_path=image_path,
+                )
+
+                logger.info(
+                    "Done: thread=%s session=%s response_len=%d duration=%dms",
+                    thread_id, session_id, len(response), duration_ms,
+                )
+
+                await websocket.send_json({
+                    "type": "done",
+                    "sessionId": session_id,
+                    "durationMs": duration_ms,
+                })
+
             except Exception as e:
-                logger.exception("Error running Hermes for thread %s", thread_id)
+                logger.exception("Error running agent for thread %s", thread_id)
                 await websocket.send_json({"type": "error", "message": str(e)})
 
     except WebSocketDisconnect:

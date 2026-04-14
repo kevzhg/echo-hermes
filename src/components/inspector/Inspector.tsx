@@ -1,7 +1,10 @@
 import { useState, useMemo, useCallback } from 'react'
-import { ChevronDown, ChevronRight, Search, Star, X, Zap } from 'lucide-react'
+import { ChevronDown, ChevronRight, RefreshCw, Search, Star, X, Zap } from 'lucide-react'
 import type { Skill } from '../../types'
+import type { MindEvent } from '../../hooks/useHermesConnection'
 import { SkillContextMenu } from './SkillContextMenu'
+import { MindTimeline } from './MindTimeline'
+import { syncSkillsFromBridge } from '../../db/operations'
 
 const tabs = ['Skills', 'Files', 'Mind'] as const
 type Tab = (typeof tabs)[number]
@@ -20,6 +23,8 @@ interface InspectorProps {
   onCloneSkill: (skillId: string) => void
   onDeleteSkill: (skillId: string) => void
   onInjectSkillName?: (skillName: string) => void
+  mindEvents: MindEvent[]
+  sessionId?: string
 }
 
 export function Inspector({
@@ -30,6 +35,8 @@ export function Inspector({
   onCloneSkill,
   onDeleteSkill,
   onInjectSkillName,
+  mindEvents,
+  sessionId,
 }: InspectorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Skills')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
@@ -37,6 +44,13 @@ export function Inspector({
   const [allToolsOpen, setAllToolsOpen] = useState(true)
   const [collapsedCats, setCollapsedCats] = useState<Set<string>>(new Set())
   const [skillSearch, setSkillSearch] = useState('')
+  const [syncing, setSyncing] = useState(false)
+
+  const handleSync = useCallback(async () => {
+    setSyncing(true)
+    await syncSkillsFromBridge()
+    setSyncing(false)
+  }, [])
 
   const pinnedSkills = useMemo(
     () => skills.filter(s => s.pinned).sort((a, b) => a.name.localeCompare(b.name)),
@@ -74,10 +88,10 @@ export function Inspector({
     onInjectSkillName?.(skillName)
   }, [onInjectSkillName])
 
-  const handleUnpinnedClick = useCallback((skillId: string) => {
-    // Left-click unpinned → pin it (move to pinned tray)
-    onTogglePin(skillId)
-  }, [onTogglePin])
+  const handleUnpinnedClick = useCallback((skill: { id: string; name: string }) => {
+    // Left-click any skill → type skill name into chat
+    onInjectSkillName?.(skill.name)
+  }, [onInjectSkillName])
 
   const handleActivateSkill = useCallback((skillId: string) => {
     // Toggle active state (persistent purple pill in chat)
@@ -172,6 +186,13 @@ export function Inspector({
                   <ChevronRight className="h-2.5 w-2.5" />
                 )}
                 <span>All Skills ({unpinnedSkills.length})</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleSync() }}
+                  className="ml-auto text-zinc-600 hover:text-zinc-300 transition-colors"
+                  title="Sync skills from Hermes"
+                >
+                  <RefreshCw className={`h-2.5 w-2.5 ${syncing ? 'animate-spin' : ''}`} />
+                </button>
               </button>
               {allToolsOpen && (
                 <div className="relative px-1 mb-2">
@@ -211,7 +232,7 @@ export function Inspector({
                         {catSkills.map(skill => (
                           <button
                             key={skill.id}
-                            onClick={() => handleUnpinnedClick(skill.id)}
+                            onClick={() => handleUnpinnedClick(skill)}
                             onContextMenu={e => handleContextMenu(e, skill.id)}
                             className="inline-flex items-center gap-1 bg-zinc-800 border border-zinc-700 text-zinc-400 rounded px-2 py-1 text-xs hover:border-zinc-500 hover:text-zinc-300 transition-all"
                           >
@@ -238,9 +259,7 @@ export function Inspector({
         )}
 
         {activeTab === 'Mind' && (
-          <div className="flex-1 flex items-center justify-center text-xs text-zinc-600 py-12">
-            Reasoning steps will appear here
-          </div>
+          <MindTimeline events={mindEvents} sessionId={sessionId} />
         )}
       </div>
 

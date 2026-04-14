@@ -1,9 +1,9 @@
-import { useRef, useEffect, useCallback, useMemo } from 'react'
-import { Paperclip, ArrowUp, Zap } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { Paperclip, ArrowUp, Zap, X, Image as ImageIcon } from 'lucide-react'
 import type { Skill } from '../../types'
 
 interface ChatInputProps {
-  onSend: (message: string, forcedSkills?: string[]) => void
+  onSend: (message: string, forcedSkills?: string[], imagePath?: string) => void
   disabled?: boolean
   skills?: Skill[]
   pendingText?: string | null
@@ -14,8 +14,10 @@ interface ChatInputProps {
 
 export function ChatInput({ onSend, disabled = false, skills = [], pendingText, onPendingTextConsumed, value, onChange }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [attachedImage, setAttachedImage] = useState<{ file: File; preview: string; serverPath?: string } | null>(null)
   const hasText = value.trim().length > 0
-  const canSend = hasText && !disabled
+  const canSend = (hasText || attachedImage) && !disabled
 
   // Active skills from DB (persistent purple pills)
   const activeSkills = useMemo(() => skills.filter(s => s.active), [skills])
@@ -43,12 +45,58 @@ export function ChatInput({ onSend, disabled = false, skills = [], pendingText, 
     el.style.height = Math.min(el.scrollHeight, 160) + 'px'
   }, [value])
 
+  const attachFile = useCallback(async (file: File) => {
+    const preview = URL.createObjectURL(file)
+    setAttachedImage({ file, preview })
+
+    const formData = new FormData()
+    formData.append('file', file)
+    try {
+      const res = await fetch('http://localhost:8000/api/upload', { method: 'POST', body: formData })
+      if (res.ok) {
+        const { path } = await res.json()
+        setAttachedImage({ file, preview, serverPath: path })
+      }
+    } catch {
+      // Keep preview even if upload fails
+    }
+  }, [])
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) attachFile(file)
+    e.target.value = ''
+  }, [attachFile])
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        if (file) attachFile(file)
+        return
+      }
+    }
+  }, [attachFile])
+
+  const removeImage = useCallback(() => {
+    if (attachedImage?.preview) URL.revokeObjectURL(attachedImage.preview)
+    setAttachedImage(null)
+  }, [attachedImage])
+
   const handleSend = useCallback(() => {
     if (!canSend) return
     const activeNames = activeSkills.map(s => s.name)
-    onSend(value.trim(), activeNames.length > 0 ? activeNames : undefined)
+    onSend(
+      value.trim() || (attachedImage ? 'describe this image' : ''),
+      activeNames.length > 0 ? activeNames : undefined,
+      attachedImage?.serverPath,
+    )
     onChange('')
-  }, [value, canSend, onSend, activeSkills, onChange])
+    removeImage()
+  }, [value, canSend, onSend, activeSkills, onChange, attachedImage, removeImage])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -74,15 +122,49 @@ export function ChatInput({ onSend, disabled = false, skills = [], pendingText, 
         </div>
       )}
 
+      {/* Image preview */}
+      {attachedImage && (
+        <div className="mb-2 relative inline-block">
+          <img
+            src={attachedImage.preview}
+            alt="Attached"
+            className="max-h-32 rounded-lg border border-zinc-700"
+          />
+          <button
+            onClick={removeImage}
+            className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-zinc-800 border border-zinc-600 rounded-full flex items-center justify-center text-zinc-400 hover:text-red-400 transition-colors"
+          >
+            <X className="h-3 w-3" />
+          </button>
+          {!attachedImage.serverPath && (
+            <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center text-[10px] text-zinc-400">
+              Uploading...
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="bg-[#18181b] border border-zinc-800 rounded-lg flex items-end gap-2 px-3 py-2">
-        <button className="text-zinc-500 hover:text-zinc-400 transition-colors pb-0.5">
-          <Paperclip className="h-4 w-4" />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className={`transition-colors pb-0.5 ${attachedImage ? 'text-blue-400' : 'text-zinc-500 hover:text-zinc-400'}`}
+          title="Attach image"
+        >
+          {attachedImage ? <ImageIcon className="h-4 w-4" /> : <Paperclip className="h-4 w-4" />}
         </button>
         <textarea
           ref={textareaRef}
           value={value}
           onChange={e => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           placeholder={disabled ? 'Echo is thinking...' : 'Type a message...'}
           disabled={disabled}
           rows={1}

@@ -8,19 +8,35 @@ import {
   finalizeStreamingMessage,
   failStreamingMessage,
   setThreadSessionId,
+  setThreadModel,
+  recordKnownModel,
+  appendToolCall,
+  updateToolCall,
 } from '../db/operations'
 
 const BRIDGE_URL = 'ws://localhost:8000/ws'
 const RECONNECT_BASE = 1000
 const RECONNECT_MAX = 16000
 
+export interface MindEvent {
+  dbId: number
+  role: string
+  content: string
+  timestamp: number
+  toolName?: string
+  toolCalls?: { name: string }[]
+  reasoning?: string
+}
+
 interface HermesConnection {
   sendMessage: (content: string) => void
   isConnected: boolean
+  mindEvents: MindEvent[]
 }
 
 export function useHermesConnection(threadId: string | null): HermesConnection {
   const [isConnected, setIsConnected] = useState(false)
+  const [mindEvents, setMindEvents] = useState<MindEvent[]>([])
   const wsRef = useRef<WebSocket | null>(null)
   const currentMsgIdRef = useRef<string | null>(null)
   const reconnectDelayRef = useRef(RECONNECT_BASE)
@@ -63,14 +79,35 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
         if (msgId && data.content) {
           await appendToStreamingMessage(msgId, data.content)
         }
+      } else if (data.type === 'tool') {
+        const msgId = currentMsgIdRef.current
+        if (msgId && data.id) {
+          if (data.status === 'running') {
+            await appendToolCall(msgId, {
+              id: data.id,
+              name: data.name || 'tool',
+              arguments: data.arguments,
+              status: 'running',
+            })
+          } else {
+            await updateToolCall(msgId, data.id, {
+              status: data.status,
+              result: data.result,
+            })
+          }
+        }
+      } else if (data.type === 'mind') {
+        setMindEvents(prev => {
+          if (prev.some(e => e.dbId === data.dbId)) return prev
+          return [...prev, data as MindEvent]
+        })
       } else if (data.type === 'done') {
         const msgId = currentMsgIdRef.current
         if (msgId) {
-          // If content was sent in done (non-streaming fallback), set it; otherwise just finalize
           if (typeof data.content === 'string' && data.content.length > 0) {
             await updateStreamingMessage(msgId, data.content)
           } else {
-            await finalizeStreamingMessage(msgId)
+            await finalizeStreamingMessage(msgId, data.durationMs)
           }
           currentMsgIdRef.current = null
         }
@@ -136,10 +173,21 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     }
   }, [threadId])
 
-  const send = useCallback(async (content: string, forcedSkills?: string[]) => {
+  const send = useCallback(async (content: string, forcedSkills?: string[], imagePath?: string) => {
     const tid = threadIdRef.current
     const ws = wsRef.current
     if (!tid || !ws || ws.readyState !== WebSocket.OPEN) return
+
+    // Intercept "/model <name>" — set thread model, no Hermes call
+    const modelMatch = content.match(/^\/model\s+(\S+)\s*$/)
+    if (modelMatch) {
+      const newModel = modelMatch[1]
+      await setThreadModel(tid, newModel)
+      await recordKnownModel(newModel)
+      const ackId = await createStreamingMessage(tid)
+      await updateStreamingMessage(ackId, `Model switched to \`${newModel}\` for this thread.`)
+      return
+    }
 
     // Write user message to DB
     await sendMessage(tid, content)
@@ -148,18 +196,24 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     const msgId = await createStreamingMessage(tid)
     currentMsgIdRef.current = msgId
 
-    // Get thread's Hermes session ID if linked
+    // Get thread's Hermes session ID + model
     const thread = await db.threads.get(tid)
     const sessionId = thread?.hermesSessionId
+    const model = thread?.model
+    if (model) await recordKnownModel(model)
 
-    // Send to bridge with session ID + forced skills
-    ws.send(JSON.stringify({
+    // Send to bridge
+    const payload = {
       type: 'message',
       content,
       sessionId: sessionId || undefined,
       skills: forcedSkills && forcedSkills.length > 0 ? forcedSkills : undefined,
-    }))
+      model: model || undefined,
+      imagePath: imagePath || undefined,
+    }
+    console.log('[Echo] WS send:', { model: payload.model, sessionId: payload.sessionId })
+    ws.send(JSON.stringify(payload))
   }, [])
 
-  return { sendMessage: send, isConnected }
+  return { sendMessage: send, isConnected, mindEvents }
 }

@@ -42,9 +42,10 @@ def get_session_info(session_id: str) -> dict | None:
 
 
 def get_session_messages(session_id: str) -> list[dict]:
-    """Return all messages for a session, ordered by id."""
+    """Return all messages for a session, ordered by timestamp."""
     if not os.path.exists(DB_PATH):
         return []
+
     try:
         conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
         conn.row_factory = sqlite3.Row
@@ -53,7 +54,9 @@ def get_session_messages(session_id: str) -> list[dict]:
                 """
                 SELECT id, role, content, tool_call_id, tool_calls, tool_name,
                        reasoning, timestamp
-                FROM messages WHERE session_id = ? ORDER BY id
+                FROM messages
+                WHERE session_id = ?
+                ORDER BY id
                 """,
                 (session_id,),
             ).fetchall()
@@ -67,11 +70,14 @@ def get_session_messages(session_id: str) -> list[dict]:
                 }
                 if r["tool_name"]:
                     msg["toolName"] = r["tool_name"]
+                if r["tool_call_id"]:
+                    msg["toolCallId"] = r["tool_call_id"]
                 if r["tool_calls"]:
                     try:
                         tc = json.loads(r["tool_calls"])
                         msg["toolCalls"] = [
-                            {"name": (t.get("function") or {}).get("name") or "unknown"}
+                            {"name": (t.get("function") or {}).get("name") or "unknown",
+                             "arguments": ((t.get("function") or {}).get("arguments") or "")[:500]}
                             for t in (tc if isinstance(tc, list) else [])
                         ]
                     except Exception:

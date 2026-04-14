@@ -29,8 +29,12 @@ import {
 export default function App() {
   useEffect(() => { initDb().then(() => syncSkillsFromBridge()) }, [])
 
-  const { sidebarCollapsed, inspectorCollapsed, toggleSidebar, toggleInspector } =
-    usePanelCollapse()
+  const {
+    sidebarCollapsed, inspectorCollapsed,
+    sidebarWidth, inspectorWidth,
+    toggleSidebar, toggleInspector,
+    setSidebarWidth, setInspectorWidth,
+  } = usePanelCollapse()
   const {
     expandedContextIds,
     activeThreadId,
@@ -45,7 +49,7 @@ export default function App() {
     createThread,
   } = useWorkspace()
 
-  const { sendMessage: hermesSend } = useHermesConnection(activeThreadId)
+  const { sendMessage: hermesSend, mindEvents } = useHermesConnection(activeThreadId)
 
   const skills = useLiveQuery(() => db.skills.toArray()) ?? []
 
@@ -68,8 +72,12 @@ export default function App() {
     <AppShell
       sidebarCollapsed={sidebarCollapsed}
       inspectorCollapsed={inspectorCollapsed}
+      sidebarWidth={sidebarWidth}
+      inspectorWidth={inspectorWidth}
       onToggleSidebar={toggleSidebar}
       onToggleInspector={toggleInspector}
+      onSidebarResize={setSidebarWidth}
+      onInspectorResize={setInspectorWidth}
       sidebar={
         <Sidebar
           agentStatus="online"
@@ -112,6 +120,8 @@ export default function App() {
           onCloneSkill={handleCloneSkill}
           onDeleteSkill={handleDeleteSkill}
           onInjectSkillName={(name) => setPendingText(name)}
+          mindEvents={mindEvents}
+          sessionId={activeThread?.hermesSessionId}
         />
       }
     />

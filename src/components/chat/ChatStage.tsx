@@ -3,13 +3,14 @@ import type { Context, Thread, Message, Skill } from '../../types'
 import { MessageList } from './MessageList'
 import { ChatInput } from './ChatInput'
 import { SessionInfo } from './SessionInfo'
+import { ModelSelector } from './ModelSelector'
 
 interface ChatStageProps {
   activeContext: Context | null
   activeThread: Thread | null
   messages: Message[]
   skills: Skill[]
-  onSend: (content: string, forcedSkills?: string[]) => void
+  onSend: (content: string, forcedSkills?: string[], imagePath?: string) => void
   pendingText?: string | null
   onPendingTextConsumed?: () => void
 }
@@ -18,8 +19,8 @@ export function ChatStage({ activeContext, activeThread, messages, skills, onSen
   const [inputValue, setInputValue] = useState('')
   const isTyping = messages.some(m => m.status === 'streaming')
 
-  const handleSend = useCallback((content: string, forcedSkills?: string[]) => {
-    onSend(content, forcedSkills)
+  const handleSend = useCallback((content: string, forcedSkills?: string[], imagePath?: string) => {
+    onSend(content, forcedSkills, imagePath)
   }, [onSend])
 
   return (
@@ -42,11 +43,16 @@ export function ChatStage({ activeContext, activeThread, messages, skills, onSen
         ) : (
           <div className="text-sm text-zinc-500">Select a thread</div>
         )}
-        {activeThread?.hermesSessionId && (
-          <SessionInfo
-            sessionId={activeThread.hermesSessionId}
-            threadId={activeThread.id}
-          />
+        {activeThread && (
+          <div className="flex items-center gap-3 shrink-0">
+            <ModelSelector threadId={activeThread.id} currentModel={activeThread.model} />
+            {activeThread.hermesSessionId && (
+              <SessionInfo
+                sessionId={activeThread.hermesSessionId}
+                threadId={activeThread.id}
+              />
+            )}
+          </div>
         )}
       </div>
 

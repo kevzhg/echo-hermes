@@ -173,7 +173,7 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
     }
   }, [threadId])
 
-  const send = useCallback(async (content: string, forcedSkills?: string[]) => {
+  const send = useCallback(async (content: string, forcedSkills?: string[], imagePath?: string) => {
     const tid = threadIdRef.current
     const ws = wsRef.current
     if (!tid || !ws || ws.readyState !== WebSocket.OPEN) return
@@ -209,6 +209,7 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
       sessionId: sessionId || undefined,
       skills: forcedSkills && forcedSkills.length > 0 ? forcedSkills : undefined,
       model: model || undefined,
+      imagePath: imagePath || undefined,
     }
     console.log('[Echo] WS send:', { model: payload.model, sessionId: payload.sessionId })
     ws.send(JSON.stringify(payload))

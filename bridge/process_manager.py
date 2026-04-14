@@ -82,6 +82,7 @@ class SubprocessManager:
         on_tool: Callable[[dict], Awaitable[None]] | None = None,
         skills: list[str] | None = None,
         model: str | None = None,
+        image_path: str | None = None,
     ) -> tuple[str, str | None, int]:
         """Run one Hermes message. Returns (response, session_id, duration_ms)."""
         session = self.get_or_create(thread_id)
@@ -102,7 +103,7 @@ class SubprocessManager:
             try:
                 # First attempt (with --resume if session exists)
                 stdout_text, stderr_text, returncode = await self._exec(
-                    self._build_command(session, content, skills=skills, model=model)
+                    self._build_command(session, content, skills=skills, model=model, image_path=image_path)
                 )
 
                 # Retry without --resume on ANY failure when session_id was set
@@ -114,7 +115,7 @@ class SubprocessManager:
                     )
                     session.session_id = None
                     stdout_text, stderr_text, returncode = await self._exec(
-                        self._build_command(session, content, skills=skills, model=model)
+                        self._build_command(session, content, skills=skills, model=model, image_path=image_path)
                     )
             finally:
                 # Stop poller and wait for final sweep
@@ -199,12 +200,15 @@ class SubprocessManager:
     def _build_command(
         self, session: HermesSession, content: str,
         skills: list[str] | None = None, model: str | None = None,
+        image_path: str | None = None,
     ) -> list[str]:
         cmd = [HERMES_COMMAND, "chat", "-Q", "-q", content, "-m", model or "qwen/qwen3.6-plus"]
         if session.session_id:
             cmd.extend(["--resume", session.session_id])
         if skills:
             cmd.extend(["--skills", ",".join(skills)])
+        if image_path:
+            cmd.extend(["--image", image_path])
         return cmd
 
     @staticmethod

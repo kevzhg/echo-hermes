@@ -10,7 +10,7 @@ interface ChatStageProps {
   activeThread: Thread | null
   messages: Message[]
   skills: Skill[]
-  onSend: (content: string, forcedSkills?: string[]) => void
+  onSend: (content: string, forcedSkills?: string[], imagePath?: string) => void
   pendingText?: string | null
   onPendingTextConsumed?: () => void
 }
@@ -19,8 +19,8 @@ export function ChatStage({ activeContext, activeThread, messages, skills, onSen
   const [inputValue, setInputValue] = useState('')
   const isTyping = messages.some(m => m.status === 'streaming')
 
-  const handleSend = useCallback((content: string, forcedSkills?: string[]) => {
-    onSend(content, forcedSkills)
+  const handleSend = useCallback((content: string, forcedSkills?: string[], imagePath?: string) => {
+    onSend(content, forcedSkills, imagePath)
   }, [onSend])
 
   return (

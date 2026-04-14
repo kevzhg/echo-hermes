@@ -3,15 +3,18 @@
 import asyncio
 import json
 import logging
+import os
 import re
+import tempfile
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from process_manager import SubprocessManager
 from skills import discover_skills
@@ -51,6 +54,22 @@ async def health():
 @app.get("/api/skills")
 async def get_skills():
     return await discover_skills()
+
+
+UPLOAD_DIR = tempfile.mkdtemp(prefix="echo_uploads_")
+logger.info("Upload directory: %s", UPLOAD_DIR)
+
+
+@app.post("/api/upload")
+async def upload_image(file: UploadFile = File(...)):
+    """Save uploaded image to temp dir, return path for --image flag."""
+    ext = os.path.splitext(file.filename or "image.png")[1] or ".png"
+    path = os.path.join(UPLOAD_DIR, f"{os.urandom(8).hex()}{ext}")
+    content = await file.read()
+    with open(path, "wb") as f:
+        f.write(content)
+    logger.info("Image uploaded: %s (%d bytes)", path, len(content))
+    return JSONResponse({"path": path, "size": len(content)})
 
 
 @app.get("/api/sessions/{session_id}")
@@ -93,6 +112,7 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
             skills = data.get("skills", [])
             client_session_id = data.get("sessionId")
             model = data.get("model")
+            image_path = data.get("imagePath")
             logger.info(
                 "WS MESSAGE: thread=%s, client_sessionId=%s, skills=%s, model=%s",
                 thread_id, client_session_id, skills, model,
@@ -113,7 +133,7 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
 
                 response, session_id, duration_ms = await manager.run_message(
                     thread_id, content,
-                    on_tool=on_tool, skills=skills, model=model,
+                    on_tool=on_tool, skills=skills, model=model, image_path=image_path,
                 )
                 logger.info(
                     "Streaming response: thread=%s sessionId=%s response_len=%d duration_ms=%d",

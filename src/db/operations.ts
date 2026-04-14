@@ -277,3 +277,29 @@ export async function cloneSkill(skillId: string): Promise<void> {
 export async function deleteSkill(skillId: string): Promise<void> {
   await db.skills.delete(skillId)
 }
+
+// --- Reminders ---
+
+export async function createReminder(
+  title: string, dueAt: string, threadId?: string, contextId?: string,
+): Promise<string> {
+  const id = crypto.randomUUID()
+  await db.reminders.add({
+    id, title, dueAt, threadId, contextId,
+    completed: false,
+    createdAt: new Date().toISOString(),
+  })
+  return id
+}
+
+export async function completeReminder(id: string): Promise<void> {
+  await db.reminders.update(id, { completed: true })
+}
+
+export async function uncompleteReminder(id: string): Promise<void> {
+  await db.reminders.update(id, { completed: false })
+}
+
+export async function deleteReminder(id: string): Promise<void> {
+  await db.reminders.delete(id)
+}

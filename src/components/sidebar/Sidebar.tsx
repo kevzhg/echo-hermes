@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Settings } from 'lucide-react'
+import { ReminderBadge } from './ReminderBadge'
 import type { AgentStatus as AgentStatusType, ContextWithThreads } from '../../types'
 import { AgentStatus } from './AgentStatus'
 import { SearchInput } from './SearchInput'
@@ -27,6 +28,7 @@ interface SidebarProps {
   onReorderContexts: (orderedIds: string[]) => void
   onRenameContext: (contextId: string, name: string, emoji: string) => void
   onDeleteContext: (contextId: string) => void
+  onOpenReminders?: () => void
 }
 
 export function Sidebar({
@@ -48,6 +50,7 @@ export function Sidebar({
   onReorderContexts,
   onRenameContext,
   onDeleteContext,
+  onOpenReminders,
 }: SidebarProps) {
   const favoriteThreads = useMemo(
     () => contexts.flatMap(c => c.threads).filter(t => t.favorite),
@@ -119,6 +122,7 @@ export function Sidebar({
             >
               + New Context
             </button>
+            <ReminderBadge onClick={() => onOpenReminders?.()} />
             <button
               className="w-8 flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 rounded text-zinc-500 transition-colors"
               aria-label="Settings"

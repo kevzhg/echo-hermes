@@ -122,6 +122,8 @@ export default function App() {
           onInjectSkillName={(name) => setPendingText(name)}
           mindEvents={mindEvents}
           sessionId={activeThread?.hermesSessionId}
+          activeThreadId={activeThreadId}
+          onSelectThread={setActiveThread}
         />
       }
     />

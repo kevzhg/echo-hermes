@@ -4,9 +4,10 @@ import type { Skill } from '../../types'
 import type { MindEvent } from '../../hooks/useHermesConnection'
 import { SkillContextMenu } from './SkillContextMenu'
 import { MindTimeline } from './MindTimeline'
+import { RemindersPanel } from './RemindersPanel'
 import { syncSkillsFromBridge } from '../../db/operations'
 
-const tabs = ['Skills', 'Files', 'Mind'] as const
+const tabs = ['Skills', 'Files', 'Mind', 'Reminders'] as const
 type Tab = (typeof tabs)[number]
 
 interface ContextMenuState {
@@ -25,6 +26,8 @@ interface InspectorProps {
   onInjectSkillName?: (skillName: string) => void
   mindEvents: MindEvent[]
   sessionId?: string
+  activeThreadId?: string | null
+  onSelectThread?: (threadId: string) => void
 }
 
 export function Inspector({
@@ -37,6 +40,8 @@ export function Inspector({
   onInjectSkillName,
   mindEvents,
   sessionId,
+  activeThreadId,
+  onSelectThread,
 }: InspectorProps) {
   const [activeTab, setActiveTab] = useState<Tab>('Skills')
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
@@ -260,6 +265,10 @@ export function Inspector({
 
         {activeTab === 'Mind' && (
           <MindTimeline events={mindEvents} sessionId={sessionId} />
+        )}
+
+        {activeTab === 'Reminders' && (
+          <RemindersPanel activeThreadId={activeThreadId} onSelectThread={onSelectThread} />
         )}
       </div>
 

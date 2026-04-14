@@ -65,4 +65,14 @@ export interface SkillCategory {
   skills: { name: string; source: string }[]
 }
 
+export interface Reminder {
+  id: string
+  title: string
+  dueAt: string          // ISO timestamp
+  threadId?: string      // optional link to thread
+  contextId?: string     // optional link to context
+  completed: boolean
+  createdAt: string
+}
+
 export type AgentStatus = 'online' | 'thinking' | 'offline'

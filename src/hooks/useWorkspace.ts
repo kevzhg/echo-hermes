@@ -24,9 +24,14 @@ export function useWorkspace(): WorkspaceState {
   const rawContexts = useLiveQuery(() => db.contexts.orderBy('order').toArray()) ?? []
   const allThreads = useLiveQuery(() => db.threads.toArray()) ?? []
 
-  const [expandedContextIds, setExpandedContextIds] = useState<Set<string>>(
-    new Set(['ctx-workplace'])
-  )
+  // Start with all contexts expanded — populate once contexts load
+  const [expandedContextIds, setExpandedContextIds] = useState<Set<string>>(new Set())
+  const [initializedExpand, setInitializedExpand] = useState(false)
+
+  if (!initializedExpand && rawContexts.length > 0) {
+    setExpandedContextIds(new Set(rawContexts.map(c => c.id)))
+    setInitializedExpand(true)
+  }
   const [activeThreadId, setActiveThreadId] = useState<string | null>('thr-okr')
   const [filterQuery, setFilterQuery] = useState('')
 

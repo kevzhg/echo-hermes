@@ -109,6 +109,10 @@ export function useHermesConnection(threadId: string | null): HermesConnection {
           } else {
             await finalizeStreamingMessage(msgId, data.durationMs)
           }
+          // Store per-call token usage on the message
+          if (data.tokenUsage) {
+            await db.messages.update(msgId, { tokenUsage: data.tokenUsage })
+          }
           currentMsgIdRef.current = null
         }
         // Auto-link session ID on first message for empty threads

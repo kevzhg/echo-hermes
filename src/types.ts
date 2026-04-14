@@ -41,6 +41,7 @@ export interface Message {
   timestamp: string
   status: 'sent' | 'streaming' | 'error'
   durationMs?: number
+  tokenUsage?: { input_tokens: number; output_tokens: number; cache_read_tokens?: number }
   toolCalls?: ToolCall[]
   kairos?: {
     context: string

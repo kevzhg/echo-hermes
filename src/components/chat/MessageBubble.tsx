@@ -80,6 +80,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             </span>
           </>
         )}
+        {message.tokenUsage && (
+          <>
+            <span className="text-[9px] text-[#3f3f46]">·</span>
+            <span className="text-[11px] text-[#52525b]" title={`in: ${message.tokenUsage.input_tokens} out: ${message.tokenUsage.output_tokens}${message.tokenUsage.cache_read_tokens ? ` cache: ${message.tokenUsage.cache_read_tokens}` : ''}`}>
+              {message.tokenUsage.input_tokens >= 1000 ? `${(message.tokenUsage.input_tokens / 1000).toFixed(1)}k` : message.tokenUsage.input_tokens}↓ {message.tokenUsage.output_tokens}↑
+            </span>
+          </>
+        )}
         {message.kairos && (
           <>
             <span className="text-[9px] text-[#3f3f46]">·</span>

@@ -8,6 +8,7 @@ interface SessionData {
   tool_call_count?: number
   input_tokens?: number
   output_tokens?: number
+  estimated_context_tokens?: number
   model?: string
   estimated_cost_usd?: number
 }
@@ -62,9 +63,9 @@ export function SessionInfo({ sessionId, threadId }: SessionInfoProps) {
 
   if (!sessionId || !data?.found) return null
 
-  // Use estimated context tokens (content-length based) instead of cumulative API tokens
-  const totalTokens = (data as Record<string, unknown>).estimated_context_tokens as number
-    ?? (data.input_tokens ?? 0)
+  // Use estimated context tokens (system prompt + conversation content)
+  // NOT the cumulative API input_tokens which sums across ALL turns
+  const totalTokens = data.estimated_context_tokens ?? (data.input_tokens ?? 0)
   const contextWindow = CONTEXT_WINDOWS[data.model ?? ''] ?? DEFAULT_CONTEXT_WINDOW
   const pct = Math.min(100, Math.round((totalTokens / contextWindow) * 100))
 

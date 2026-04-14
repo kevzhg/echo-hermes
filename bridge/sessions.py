@@ -35,15 +35,18 @@ def get_session_info(session_id: str) -> dict | None:
                 return None
             result = dict(row)
 
-            # Estimate current context size from message content length.
-            # DB input_tokens is cumulative across ALL API calls (inflated).
-            # Better: sum all message content chars / 4 ≈ actual context tokens.
+            # Estimate CURRENT context window usage (not cumulative API total).
+            # DB input_tokens sums ALL API calls across ALL turns (inflated).
+            # Real context = system prompt (~25k) + conversation content.
+            # Estimate conversation content from message text length / 4.
             cur.execute(
                 "SELECT COALESCE(SUM(LENGTH(content)), 0) FROM messages WHERE session_id = ?",
                 (session_id,),
             )
             total_chars = cur.fetchone()[0] or 0
-            result["estimated_context_tokens"] = total_chars // 4
+            conversation_tokens = total_chars // 4
+            system_prompt_estimate = 25000  # Hermes system prompt is ~20-30k tokens
+            result["estimated_context_tokens"] = conversation_tokens + system_prompt_estimate
 
             return result
         finally:

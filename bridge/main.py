@@ -134,7 +134,7 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
                 async def on_tool(event: dict):
                     await websocket.send_json(event)
 
-                response, session_id, duration_ms = await runner.run_message(
+                response, session_id, duration_ms, token_usage = await runner.run_message(
                     thread_id,
                     content or "describe this image",
                     on_chunk=on_chunk,
@@ -145,14 +145,16 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
                 )
 
                 logger.info(
-                    "Done: thread=%s session=%s response_len=%d duration=%dms",
+                    "Done: thread=%s session=%s response_len=%d duration=%dms tokens_in=%d tokens_out=%d",
                     thread_id, session_id, len(response), duration_ms,
+                    token_usage.get("input_tokens", 0), token_usage.get("output_tokens", 0),
                 )
 
                 await websocket.send_json({
                     "type": "done",
                     "sessionId": session_id,
                     "durationMs": duration_ms,
+                    "tokenUsage": token_usage,
                 })
 
             except Exception as e:

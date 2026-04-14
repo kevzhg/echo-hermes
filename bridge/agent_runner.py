@@ -83,8 +83,8 @@ class AgentRunner:
         skills: list[str] | None = None,
         model: str | None = None,
         image_path: str | None = None,
-    ) -> tuple[str, str | None, int]:
-        """Run one agent turn. Returns (final_response, session_id, duration_ms).
+    ) -> tuple[str, str | None, int, dict]:
+        """Run one agent turn. Returns (final_response, session_id, duration_ms, token_usage).
 
         Callbacks fire from a worker thread — bridge must handle async bridging.
         """
@@ -200,7 +200,11 @@ class AgentRunner:
                     result.get("output_tokens", 0),
                 )
 
-                return final_response, session.session_id, duration_ms
+                return final_response, session.session_id, duration_ms, {
+                    "input_tokens": result.get("input_tokens", 0),
+                    "output_tokens": result.get("output_tokens", 0),
+                    "cache_read_tokens": result.get("cache_read_tokens", 0),
+                }
 
             except Exception as e:
                 duration_ms = int((time.perf_counter() - t0) * 1000)

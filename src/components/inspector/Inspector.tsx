@@ -7,7 +7,7 @@ import { MindTimeline } from './MindTimeline'
 import { RemindersPanel } from './RemindersPanel'
 import { syncSkillsFromBridge } from '../../db/operations'
 
-const tabs = ['Skills', 'Files', 'Mind', 'Reminders'] as const
+const tabs = ['Skills', 'Mind', 'Reminders'] as const
 type Tab = (typeof tabs)[number]
 
 interface ContextMenuState {
@@ -254,12 +254,6 @@ export function Inspector({
                 )
               })}
             </div>
-          </div>
-        )}
-
-        {activeTab === 'Files' && (
-          <div className="flex-1 flex items-center justify-center text-xs text-zinc-600 py-12">
-            No active files
           </div>
         )}
 

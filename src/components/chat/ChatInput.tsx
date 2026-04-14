@@ -45,12 +45,10 @@ export function ChatInput({ onSend, disabled = false, skills = [], pendingText, 
     el.style.height = Math.min(el.scrollHeight, 160) + 'px'
   }, [value])
 
-  const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const attachFile = useCallback(async (file: File) => {
     const preview = URL.createObjectURL(file)
+    setAttachedImage({ file, preview })
 
-    // Upload to bridge immediately
     const formData = new FormData()
     formData.append('file', file)
     try {
@@ -60,12 +58,28 @@ export function ChatInput({ onSend, disabled = false, skills = [], pendingText, 
         setAttachedImage({ file, preview, serverPath: path })
       }
     } catch {
-      // Still show preview even if upload fails
-      setAttachedImage({ file, preview })
+      // Keep preview even if upload fails
     }
-    // Reset input so same file can be re-selected
-    e.target.value = ''
   }, [])
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) attachFile(file)
+    e.target.value = ''
+  }, [attachFile])
+
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        if (file) attachFile(file)
+        return
+      }
+    }
+  }, [attachFile])
 
   const removeImage = useCallback(() => {
     if (attachedImage?.preview) URL.revokeObjectURL(attachedImage.preview)
@@ -150,6 +164,7 @@ export function ChatInput({ onSend, disabled = false, skills = [], pendingText, 
           value={value}
           onChange={e => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           placeholder={disabled ? 'Echo is thinking...' : 'Type a message...'}
           disabled={disabled}
           rows={1}

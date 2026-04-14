@@ -37,7 +37,7 @@ export function ModelSelector({ threadId, currentModel }: ModelSelectorProps) {
     setOpen(false)
   }
 
-  const DEFAULT_MODEL = 'qwen/qwen3.6-plus'
+  const DEFAULT_MODEL = 'qwen/qwen3.5-flash-02-23'
   const activeModel = currentModel || DEFAULT_MODEL
   const display = activeModel.split('/').pop() ?? activeModel
 

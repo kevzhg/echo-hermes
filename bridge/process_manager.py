@@ -202,7 +202,7 @@ class SubprocessManager:
         skills: list[str] | None = None, model: str | None = None,
         image_path: str | None = None,
     ) -> list[str]:
-        cmd = [HERMES_COMMAND, "chat", "-Q", "-q", content, "-m", model or "qwen/qwen3.6-plus"]
+        cmd = [HERMES_COMMAND, "chat", "-Q", "-q", content, "-m", model or "qwen/qwen3.5-flash-02-23"]
         if session.session_id:
             cmd.extend(["--resume", session.session_id])
         if skills:

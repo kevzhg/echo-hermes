@@ -27,12 +27,7 @@ import {
 } from './db/operations'
 
 export default function App() {
-  useEffect(() => {
-    initDb().then(() => syncSkillsFromBridge())
-    // Retry sync every 15s if bridge was down on first load
-    const retry = setInterval(() => syncSkillsFromBridge(), 15000)
-    return () => clearInterval(retry)
-  }, [])
+  useEffect(() => { initDb().then(() => syncSkillsFromBridge()) }, [])
 
   const {
     sidebarCollapsed, inspectorCollapsed,

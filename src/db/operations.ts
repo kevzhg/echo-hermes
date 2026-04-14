@@ -225,15 +225,16 @@ export async function syncSkillsFromBridge(): Promise<void> {
         }
       }
 
-      // Remove stale skills not in Hermes anymore
+      // Remove ANY skill not in Hermes list (including old mock data)
       for (const existing of existingSkills) {
         if (!incomingNames.has(existing.name)) {
           await db.skills.delete(existing.id)
         }
       }
     })
-  } catch {
-    // Bridge not running — keep existing skills
+    console.log('[Echo] Skills synced:', incomingNames.size, 'skills from bridge')
+  } catch (e) {
+    console.warn('[Echo] Skills sync failed (bridge offline?):', e)
   }
 }
 

@@ -19,6 +19,14 @@ export function ChatStage({ activeContext, activeThread, messages, skills, onSen
   const [inputValue, setInputValue] = useState('')
   const isTyping = messages.some(m => m.status === 'streaming')
 
+  // Find the last assistant message's input_tokens for context meter
+  const lastInputTokens = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].tokenUsage?.input_tokens) return messages[i].tokenUsage!.input_tokens
+    }
+    return undefined
+  })()
+
   const handleSend = useCallback((content: string, forcedSkills?: string[], imagePath?: string) => {
     onSend(content, forcedSkills, imagePath)
   }, [onSend])
@@ -50,6 +58,7 @@ export function ChatStage({ activeContext, activeThread, messages, skills, onSen
               <SessionInfo
                 sessionId={activeThread.hermesSessionId}
                 threadId={activeThread.id}
+                lastInputTokens={lastInputTokens}
               />
             )}
           </div>

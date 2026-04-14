@@ -16,6 +16,7 @@ interface SessionData {
 interface SessionInfoProps {
   sessionId: string | undefined
   threadId: string | null
+  lastInputTokens?: number
 }
 
 // Known context windows per model (input token limits)
@@ -32,7 +33,7 @@ function formatTokens(n: number): string {
   return String(n)
 }
 
-export function SessionInfo({ sessionId, threadId }: SessionInfoProps) {
+export function SessionInfo({ sessionId, threadId, lastInputTokens }: SessionInfoProps) {
   const [data, setData] = useState<SessionData | null>(null)
 
   // Reactively count messages for this thread — triggers refetch on new message
@@ -63,9 +64,11 @@ export function SessionInfo({ sessionId, threadId }: SessionInfoProps) {
 
   if (!sessionId || !data?.found) return null
 
-  // Use estimated context tokens (system prompt + conversation content)
-  // NOT the cumulative API input_tokens which sums across ALL turns
-  const totalTokens = data.estimated_context_tokens ?? (data.input_tokens ?? 0)
+  // Use the last call's input_tokens (from done event) — that's the ACTUAL context size
+  // the model saw. Falls back to estimated_context_tokens from bridge.
+  const totalTokens = lastInputTokens
+    ?? data.estimated_context_tokens
+    ?? 0
   const contextWindow = CONTEXT_WINDOWS[data.model ?? ''] ?? DEFAULT_CONTEXT_WINDOW
   const pct = Math.min(100, Math.round((totalTokens / contextWindow) * 100))
 

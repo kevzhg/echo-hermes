@@ -21,11 +21,13 @@ interface SessionInfoProps {
 
 // Known context windows per model (input token limits)
 const CONTEXT_WINDOWS: Record<string, number> = {
+  'MiniMax-M2.7': 200_000,
+  'MiniMax-M2': 200_000,
   'qwen/qwen3.6-plus': 1_000_000,
   'claude-opus-4-6': 200_000,
   'claude-sonnet-4-6': 200_000,
 }
-const DEFAULT_CONTEXT_WINDOW = 1_000_000
+const DEFAULT_CONTEXT_WINDOW = 200_000
 
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`

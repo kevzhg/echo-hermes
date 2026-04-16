@@ -10,7 +10,7 @@ interface WorkspaceState {
   activeThread: Thread | null
   activeContext: Context | null
   toggleContextExpanded: (contextId: string) => void
-  setActiveThread: (threadId: string) => void
+  setActiveThread: (threadId: string | null) => void
   filterQuery: string
   setFilterQuery: (query: string) => void
   filteredContexts: ContextWithThreads[]
@@ -64,9 +64,13 @@ export function useWorkspace(): WorkspaceState {
     })
   }, [])
 
-  const setActiveThread = useCallback((threadId: string) => {
+  const setActiveThread = useCallback((threadId: string | null) => {
     setActiveThreadId(threadId)
-    try { localStorage.setItem('echo-active-thread', threadId) } catch { /* */ }
+    try {
+      if (threadId) localStorage.setItem('echo-active-thread', threadId)
+      else localStorage.removeItem('echo-active-thread')
+    } catch { /* */ }
+    if (!threadId) return
     const parentThread = allThreads.find(t => t.id === threadId)
     if (parentThread) {
       setExpandedContextIds(prev => {

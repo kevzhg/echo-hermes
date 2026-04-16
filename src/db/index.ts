@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { Context, Thread, Message, Skill, KnownModel, Reminder } from '../types'
+import type { Context, Thread, Message, Skill, KnownModel, Reminder, Note } from '../types'
 
 const db = new Dexie('EchoDB') as Dexie & {
   contexts: EntityTable<Context, 'id'>
@@ -8,6 +8,7 @@ const db = new Dexie('EchoDB') as Dexie & {
   skills: EntityTable<Skill, 'id'>
   knownModels: EntityTable<KnownModel, 'name'>
   reminders: EntityTable<Reminder, 'id'>
+  notes: EntityTable<Note, 'id'>
 }
 
 db.version(1).stores({
@@ -46,6 +47,16 @@ db.version(5).stores({
   skills: 'id, category',
   knownModels: 'name, lastUsedAt',
   reminders: 'id, dueAt, completed',
+})
+
+db.version(6).stores({
+  contexts: 'id, order',
+  threads: 'id, contextId, order',
+  messages: 'id, threadId, timestamp',
+  skills: 'id, category',
+  knownModels: 'name, lastUsedAt',
+  reminders: 'id, dueAt, completed',
+  notes: 'id, updatedAt',
 })
 
 async function initDb(): Promise<void> {

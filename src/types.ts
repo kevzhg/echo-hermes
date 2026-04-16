@@ -75,4 +75,12 @@ export interface Reminder {
   createdAt: string
 }
 
+export interface Note {
+  id: string             // 'scratch' for the main buffer; uuid for future notes
+  content: string
+  filePath?: string      // relative path inside wiki root, e.g. 'meetings/2026-04-15.md'
+  updatedAt: string      // ISO timestamp, bumped on every content change
+  syncedAt?: string      // ISO timestamp of last successful disk sync (filePath set only)
+}
+
 export type AgentStatus = 'online' | 'thinking' | 'offline'

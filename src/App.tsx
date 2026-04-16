@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { AppShell } from './components/layout/AppShell'
 import { Sidebar } from './components/sidebar/Sidebar'
 import { ChatStage } from './components/chat/ChatStage'
+import { ScratchPad } from './components/home/ScratchPad'
 import { Inspector } from './components/inspector/Inspector'
 import { usePanelCollapse } from './hooks/usePanelCollapse'
 import { useWorkspace } from './hooks/useWorkspace'
@@ -98,18 +99,24 @@ export default function App() {
           onReorderContexts={(ids) => reorderContexts(ids)}
           onRenameContext={(id, name, emoji) => renameContext(id, name, emoji)}
           onDeleteContext={(id) => deleteContext(id)}
+          onOpenScratch={() => setActiveThread(null)}
+          scratchActive={activeThreadId === null}
         />
       }
       main={
-        <ChatStage
-          activeContext={activeContext}
-          activeThread={activeThread}
-          messages={activeMessages}
-          skills={skills}
-          onSend={hermesSend}
-          pendingText={pendingText}
-          onPendingTextConsumed={() => setPendingText(null)}
-        />
+        activeThreadId === null ? (
+          <ScratchPad />
+        ) : (
+          <ChatStage
+            activeContext={activeContext}
+            activeThread={activeThread}
+            messages={activeMessages}
+            skills={skills}
+            onSend={hermesSend}
+            pendingText={pendingText}
+            onPendingTextConsumed={() => setPendingText(null)}
+          />
+        )
       }
       inspector={
         <Inspector

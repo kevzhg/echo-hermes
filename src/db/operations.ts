@@ -1,4 +1,5 @@
 import { db } from './index'
+import type { Note } from '../types'
 
 export async function createContext(name: string, emoji: string): Promise<string> {
   const id = crypto.randomUUID()
@@ -302,4 +303,34 @@ export async function uncompleteReminder(id: string): Promise<void> {
 
 export async function deleteReminder(id: string): Promise<void> {
   await db.reminders.delete(id)
+}
+
+// --- Notes ---
+
+export async function getNote(id: string): Promise<Note | undefined> {
+  return db.notes.get(id)
+}
+
+export async function upsertNote(
+  id: string,
+  patch: Partial<Note> & { content?: string },
+): Promise<void> {
+  const now = new Date().toISOString()
+  const existing = await db.notes.get(id)
+  if (existing) {
+    // Bump updatedAt whenever content changes; callers can override for syncedAt-only writes.
+    const nextUpdatedAt =
+      patch.content !== undefined && patch.content !== existing.content
+        ? now
+        : (patch.updatedAt ?? existing.updatedAt)
+    await db.notes.update(id, { ...patch, updatedAt: nextUpdatedAt })
+    return
+  }
+  await db.notes.add({
+    id,
+    content: patch.content ?? '',
+    filePath: patch.filePath,
+    syncedAt: patch.syncedAt,
+    updatedAt: patch.updatedAt ?? now,
+  })
 }

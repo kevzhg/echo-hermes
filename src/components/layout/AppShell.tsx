@@ -98,27 +98,34 @@ export function AppShell({
       {/* Main Chat Stage */}
       <div className="flex-1 min-w-0">{main}</div>
 
-      {/* Right resize handle + chevron */}
+      {/* Right resize handle + always-visible toggle arrow */}
       <div
-        className="flex shrink-0 items-center justify-center text-zinc-600 hover:text-zinc-400 transition-colors"
-        style={{ width: 6 }}
+        className="relative flex shrink-0 items-center justify-center group"
+        style={{ width: 10 }}
       >
-        <button
-          className="h-full w-full flex items-center justify-center cursor-col-resize"
-          onDoubleClick={onToggleInspector}
-          onMouseDownCapture={(e) => {
-            if (!inspectorCollapsed) {
+        {/* Drag strip (only when expanded) */}
+        {!inspectorCollapsed && (
+          <div
+            className="absolute inset-0 cursor-col-resize flex items-center justify-center"
+            onMouseDown={(e) => {
               e.preventDefault()
               handleMouseDown('inspector')
-            } else {
-              onToggleInspector()
-            }
-          }}
+            }}
+          >
+            <div className="w-[2px] h-8 bg-zinc-800 group-hover:bg-zinc-600 rounded transition-colors" />
+          </div>
+        )}
+        {/* Toggle arrow button — always visible, floats above strip */}
+        <button
+          onClick={onToggleInspector}
+          className="absolute z-10 flex items-center justify-center w-5 h-8 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-700 hover:border-zinc-500 shadow-md transition-colors"
+          title={inspectorCollapsed ? 'Expand inspector' : 'Collapse inspector'}
+          aria-label={inspectorCollapsed ? 'Expand inspector' : 'Collapse inspector'}
         >
           {inspectorCollapsed ? (
             <ChevronLeft className="h-3 w-3" />
           ) : (
-            <div className="w-[2px] h-8 bg-zinc-800 hover:bg-zinc-600 rounded transition-colors" />
+            <ChevronRight className="h-3 w-3" />
           )}
         </button>
       </div>

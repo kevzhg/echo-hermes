@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Settings } from 'lucide-react'
+import { Settings, NotebookPen } from 'lucide-react'
 import { ReminderBadge } from './ReminderBadge'
 import type { AgentStatus as AgentStatusType, ContextWithThreads } from '../../types'
 import { AgentStatus } from './AgentStatus'
@@ -29,6 +29,8 @@ interface SidebarProps {
   onRenameContext: (contextId: string, name: string, emoji: string) => void
   onDeleteContext: (contextId: string) => void
   onOpenReminders?: () => void
+  onOpenScratch: () => void
+  scratchActive: boolean
 }
 
 export function Sidebar({
@@ -51,6 +53,8 @@ export function Sidebar({
   onRenameContext,
   onDeleteContext,
   onOpenReminders,
+  onOpenScratch,
+  scratchActive,
 }: SidebarProps) {
   const favoriteThreads = useMemo(
     () => contexts.flatMap(c => c.threads).filter(t => t.favorite),
@@ -71,6 +75,21 @@ export function Sidebar({
   return (
     <div className="h-full bg-[#18181b] rounded-lg border border-zinc-800 p-3 flex flex-col">
       <AgentStatus status={agentStatus} />
+
+      <button
+        type="button"
+        onClick={onOpenScratch}
+        className={`mb-2 w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs border transition-colors cursor-pointer ${
+          scratchActive
+            ? 'bg-amber-500/10 text-amber-300 border-amber-500/25 shadow-[0_0_0_1px_rgba(245,158,11,0.1)_inset]'
+            : 'text-zinc-400 border-transparent hover:bg-zinc-800 hover:text-zinc-200'
+        }`}
+        title="Scratchpad (home)"
+      >
+        <NotebookPen className="h-3.5 w-3.5 shrink-0" />
+        <span className="font-medium">scratch</span>
+        <span className="ml-auto text-[10px] font-mono text-zinc-600 tracking-wider">~/</span>
+      </button>
 
       <SearchInput
         value={filterQuery}

@@ -31,7 +31,7 @@ except ImportError as e:
 
 from pathlib import Path
 DB_PATH = Path(os.path.expanduser("~/.hermes/state.db"))
-DEFAULT_MODEL = "qwen/qwen3.5-flash-02-23"
+DEFAULT_MODEL = "MiniMax-M2.7"
 SESSION_TIMEOUT = int(os.getenv("PROCESS_TIMEOUT", "3600"))
 
 
@@ -41,6 +41,17 @@ class SessionState:
     session_id: str | None = None
     last_used: float = field(default_factory=time.time)
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    # Currently-attached client socket. Kept as `object` to avoid a FastAPI
+    # import here; callers treat it as a WebSocket.
+    sink: object | None = None
+    # True while an agent turn is executing in the thread pool. Used by the
+    # bridge to tell a reconnecting client whether to wait for resumption or
+    # hydrate from the Hermes DB.
+    running: bool = False
+    # Client-supplied ID of the local message placeholder for the current run.
+    # Echoed back on `connected` / `chunk` / `done` so a reconnecting client
+    # knows which local message the stream belongs to.
+    current_msg_id: str | None = None
 
 
 class AgentRunner:
@@ -149,7 +160,7 @@ class AgentRunner:
                 "session_db": self._db,
                 "platform": "cli",
                 "quiet_mode": True,
-                "skip_context_files": True,
+                "skip_context_files": False,  # Load SOUL.md for identity + language protocol
                 "stream_delta_callback": sync_stream_cb,
                 "tool_start_callback": sync_tool_start_cb,
                 "tool_complete_callback": sync_tool_complete_cb,
@@ -174,13 +185,17 @@ class AgentRunner:
                 agent = AIAgent(**agent_kwargs)
 
                 # run_conversation is synchronous — dispatch to thread pool
-                result = await loop.run_in_executor(
-                    None,
-                    lambda: agent.run_conversation(
-                        content if content else None,
-                        conversation_history=history,
-                    ),
-                )
+                session.running = True
+                try:
+                    result = await loop.run_in_executor(
+                        None,
+                        lambda: agent.run_conversation(
+                            content if content else None,
+                            conversation_history=history,
+                        ),
+                    )
+                finally:
+                    session.running = False
 
                 final_response = result.get("final_response") or ""
                 new_session_id = getattr(agent, "session_id", None)

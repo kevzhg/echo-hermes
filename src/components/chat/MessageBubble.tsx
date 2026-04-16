@@ -1,5 +1,5 @@
 import type { Message } from '../../types'
-import { MarkdownRenderer } from './MarkdownRenderer'
+import { MessageContent } from './MessageContent'
 import { ToolCallCard } from './ToolCallCard'
 import { ThinkingIndicator } from './ThinkingIndicator'
 
@@ -59,13 +59,8 @@ export function MessageBubble({ message }: MessageBubbleProps) {
               ))}
             </span>
           </span>
-        ) : isStreaming ? (
-          <span className="whitespace-pre-wrap">
-            {message.content}
-            <span className="animate-pulse ml-0.5 text-zinc-400">&#9611;</span>
-          </span>
         ) : (
-          <MarkdownRenderer content={message.content} />
+          <MessageContent content={message.content} streaming={isStreaming} />
         )}
       </div>
       {isStreaming && <ThinkingIndicator />}
